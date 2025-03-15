@@ -1,11 +1,12 @@
+/loader_recipe.yml
+/loader_config.yml
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+.vscode
 # C extensions
 *.so
-
 # Distribution / packaging
 .Python
 build/
@@ -74,6 +75,7 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
+views/
 
 # Jupyter Notebook
 .ipynb_checkpoints
