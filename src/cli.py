@@ -3,7 +3,7 @@ import os
 import lkml
 import logging
 from rich.logging import RichHandler
-from importlib.metadata import version
+# from importlib.metadata import version
 from src.utils import FileHandler
 
 logging.basicConfig(
@@ -30,18 +30,22 @@ class Cli:
         parser.set_defaults(
             build_explore=True, write_output=True, hide_arrays_and_structs=True
         )
-
         parser.add_argument(
-            "--version",
-            action="version",
-            version=f'looker-loader {version("looker-loader")}',
-        )
-        parser.add_argument(
-            "--output-dir",
-            help="Path to a directory that will contain the generated lookml files",
-            default=self.DEFAULT_LOOKML_OUTPUT_DIR,
+            "--table","-t",
+            help="The name of the table to generate LookML for",
             type=str,
         )
+        # parser.add_argument(
+        #     "--version",
+        #     action="version",
+        #     version=f'looker-loader {version("looker-loader")}',
+        # )
+        # parser.add_argument(
+        #     "--output-dir",
+        #     help="Path to a directory that will contain the generated lookml files",
+        #     default=self.DEFAULT_LOOKML_OUTPUT_DIR,
+        #     type=str,
+        # )
         parser.add_argument(
             "--implicit-primary-key",
             help="Add this flag to set primary keys on views based on the first field",
@@ -71,7 +75,17 @@ class Cli:
 
     def run(self):
         """Run the CLI"""
+        args = self._args_parser.parse_args()
 
+        if not args.table:
+            logging.error("Please provide a table name")
+            return
+        
+        from src.databases.bigquery.database import BigQueryDatabase 
+        db = BigQueryDatabase()
+        a,b,c = db.split_table_id(table_id=args.table)
+        schema = db.get_table_schema(a,b,c)
+        logging.info(f"Schema: {schema}")
 
 
 def main():

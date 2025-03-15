@@ -13,9 +13,5 @@ dependencies = [
     "ruamel-yaml>=0.18.10",
 ]
 
-[build-system]
-requires = [ "hatchling",]
-build-backend = "hatchling.build"
-
 [project.scripts]
 looker-loader = "src.cli:main"

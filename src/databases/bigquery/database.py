@@ -6,8 +6,7 @@ from src.databases.bigquery.models.bigqueryTable import (
     BigQueryFieldSchema,
 )
 
-# from src.models.dbt import DbtCatalogNode
-from src.enums import BigqueryMode, BigqueryType, BigqueryUrl
+from src.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 
 class BigQueryDatabase:
     def _fetch_table_schema(
@@ -73,7 +72,7 @@ class BigQueryDatabase:
 
     def _translate_schema_to_dbt_model(
         self, schema: BigQueryTableSchema
-    ) -> DbtCatalogNode:
+    ) -> dict:
         """Translate a BigQueryTableSchema to a dbt model schema."""
 
         self._recurse_type_fields(schema.fields)
@@ -86,12 +85,16 @@ class BigQueryDatabase:
         catalog_schema = {}
         catalog_schema["columns"] = catalog_nodes
 
-        return DbtCatalogNode(**catalog_schema)
+        return catalog_schema#DbtCatalogNode(**catalog_schema)
 
-    def get_dbt_table_schema(self, project, dataset, table_id) -> BigQueryTableSchema:
+    def get_table_schema(self, project, dataset, table_id) -> BigQueryTableSchema:
         """get the schema of a dbt table and parse it into a common dbt model schema."""
         schema = self._fetch_table_schema(project, dataset, table_id)
         catalog_schema = self._translate_schema_to_dbt_model(schema)
 
         return catalog_schema
 
+    def split_table_id(self, table_id):
+        """Split a table_id into project, dataset, and table."""
+        project, dataset, table = table_id.split(".")
+        return project, dataset, table

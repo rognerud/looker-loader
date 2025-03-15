@@ -6,8 +6,7 @@ class BigQueryFieldSchema(BaseModel):
     name: str
     type: str
     fields: Optional[List["BigQueryFieldSchema"]] = None
-    mode: Optional[str] = None  # Nullable as it's optional
-    # fields: Optional[List["BigQueryFieldSchema"]] = None  # For nested fields
+    mode: Optional[str] = None
 
     class Config:
         from_attributes = True

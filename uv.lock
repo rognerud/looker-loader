@@ -234,7 +234,7 @@ wheels = [
 [[package]]
 name = "looker-loader"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "google-cloud-bigquery" },
     { name = "lkml" },
