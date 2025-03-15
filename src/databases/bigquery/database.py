@@ -6,6 +6,8 @@ from src.databases.bigquery.models.bigqueryTable import (
     BigQueryFieldSchema,
 )
 
+from src.models.database import DatabaseField, DatabaseTable
+
 from src.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 
 class BigQueryDatabase:
@@ -79,13 +81,13 @@ class BigQueryDatabase:
         schema.fields = self._recursively_flatten_fields(schema.fields)
 
         dict_schema = schema.model_dump()
-        catalog_nodes = {}
+        catalog_nodes = []
         for field in dict_schema.get("fields"):
-            catalog_nodes[field.get("name")] = field
+            catalog_nodes.append(field)
         catalog_schema = {}
         catalog_schema["columns"] = catalog_nodes
 
-        return catalog_schema#DbtCatalogNode(**catalog_schema)
+        return DatabaseTable(**catalog_schema)
 
     def get_table_schema(self, project, dataset, table_id) -> BigQueryTableSchema:
         """get the schema of a dbt table and parse it into a common dbt model schema."""

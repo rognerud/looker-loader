@@ -85,7 +85,8 @@ class Cli:
         db = BigQueryDatabase()
         a,b,c = db.split_table_id(table_id=args.table)
         schema = db.get_table_schema(a,b,c)
-        logging.info(f"Schema: {schema}")
+        import rich
+        rich.print(schema)
 
 
 def main():

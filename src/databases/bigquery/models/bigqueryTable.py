@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 class BigQueryFieldSchema(BaseModel):
@@ -7,6 +7,7 @@ class BigQueryFieldSchema(BaseModel):
     type: str
     fields: Optional[List["BigQueryFieldSchema"]] = None
     mode: Optional[str] = None
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -14,6 +15,7 @@ class BigQueryFieldSchema(BaseModel):
 
 class BigQueryTableSchema(BaseModel):
     fields: List[BigQueryFieldSchema]
-
+    type: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
     class Config:
         from_attributes = True
