@@ -3,13 +3,17 @@ recipes:
     actions:
       group_label: Identifiers
     filters:
-      regex_include: '_id$'
+      regex_include: _id$|^pk_|_code$
   - name: second_values
     filters:
-      regex_include: '_seconds$'
+      regex_include: _seconds$
       type: int
     dimension:
       group_label: Duration
       variants:
-        - prefix: "minutes_"
-          sql: "$x/60"
+        - suffix: minutes
+          sql: $x/60
+          measures:
+            - type: sum
+      measures:
+        - type: sum

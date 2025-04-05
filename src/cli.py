@@ -96,7 +96,6 @@ class Cli:
         # import rich
         # rich.print(schema)
 
-
 def main():
     cli = Cli()
     cli.run()

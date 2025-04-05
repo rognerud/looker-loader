@@ -7,7 +7,7 @@ from src.models.looker import (
 
 class LookerDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
-    prefix: Optional[str] = None
+    suffix: str
     # $x is a placeholder for the field name
     sql: Optional[str] = None
     # $x is a placeholder for the field name
