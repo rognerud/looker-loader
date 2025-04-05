@@ -1,10 +1,10 @@
 import argparse
 import os
-import lkml
 import logging
+import yaml
 from rich.logging import RichHandler
-# from importlib.metadata import version
 from src.utils import FileHandler
+from src.models.recipe import CookBook
 
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
@@ -35,6 +35,12 @@ class Cli:
             help="The name of the table to generate LookML for",
             type=str,
         )
+        parser.add_argument(
+            "--config",
+            help="Path to the config file",
+            type=str,
+            default=".",
+        )
         # parser.add_argument(
         #     "--version",
         #     action="version",
@@ -46,12 +52,6 @@ class Cli:
         #     default=self.DEFAULT_LOOKML_OUTPUT_DIR,
         #     type=str,
         # )
-        parser.add_argument(
-            "--implicit-primary-key",
-            help="Add this flag to set primary keys on views based on the first field",
-            action="store_true",
-            default=False,
-        )
         return parser
 
     def _write_lookml_file(
@@ -77,16 +77,24 @@ class Cli:
         """Run the CLI"""
         args = self._args_parser.parse_args()
 
-        if not args.table:
-            logging.error("Please provide a table name")
-            return
-        
-        from src.databases.bigquery.database import BigQueryDatabase 
-        db = BigQueryDatabase()
-        a,b,c = db.split_table_id(table_id=args.table)
-        schema = db.get_table_schema(a,b,c)
-        import rich
-        rich.print(schema)
+        logging.info("Loading Recipe")
+        folder = args.config
+        data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
+        recipe = CookBook(**data) 
+
+        logging.info(recipe)
+
+        logging.info("Loading Config")
+        config = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
+        # config = Config(**config)
+        logging.info(config)
+
+        # from src.databases.bigquery.database import BigQueryDatabase 
+        # db = BigQueryDatabase()
+        # a,b,c = db.split_table_id(table_id=args.table)
+        # schema = db.get_table_schema(a,b,c)
+        # import rich
+        # rich.print(schema)
 
 
 def main():

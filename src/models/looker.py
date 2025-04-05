@@ -20,8 +20,8 @@ class LookerBase(BaseModel):
 #  metaclass
 class LookerViewElement(LookerBase):
     """Looker data for a view element."""
-    name: str
-    type: str
+    # name: str = Field(default=None)
+    # type: str = Field(default=None)
 
     value_format_name: Optional[LookerValueFormatName] = Field(default=None)
     group_label: Optional[str] = None
@@ -143,6 +143,7 @@ class LookerDimension(LookerViewElement):
                     values["timeframes"] = valid_timeframes
 
         return values
+
 
 class Looker(BaseModel):
     """Looker data for a model."""

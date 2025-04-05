@@ -47,6 +47,7 @@ class Recipe(BaseModel):
     name: str
     filters: RecipeFilter
     dimension: Optional[LookerRecipeDimension] = None
+    # measures: Optional[List[LookerMeasure]] = None
 
 
 class CookBook(BaseModel):

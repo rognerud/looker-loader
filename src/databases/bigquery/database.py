@@ -11,20 +11,26 @@ from src.models.database import DatabaseField, DatabaseTable
 from src.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 
 class BigQueryDatabase:
+    def __init__(self):
+        """Initialize the BigQueryDatabase class."""
+        self.database_type = "bigquery"
+        credentials, _ = google.auth.default()
+        credentials.refresh(Request())
+        self.headers = {
+            "Authorization": f"Bearer {credentials.token}",
+            "Content-Type": "application/json",
+        }
+
     def _fetch_table_schema(
         self, project_id: str, dataset_id: str, table_id: str
     ) -> BigQueryTableSchema:
         """Fetch the schema of a BigQuery table and parse it into a Pydantic model."""
-        credentials, _ = google.auth.default()
-
-        credentials.refresh(Request())
 
         url = BigqueryUrl.BIGQUERY.value.format(
             project_id=project_id, dataset_id=dataset_id, table_id=table_id
         )
 
-        headers = {"Authorization": f"Bearer {credentials.token}"}
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=self.headers, timeout=10)
         response.raise_for_status()
 
         table_info = response.json()
@@ -89,8 +95,8 @@ class BigQueryDatabase:
 
         return DatabaseTable(**catalog_schema)
 
-    def get_table_schema(self, project, dataset, table_id) -> BigQueryTableSchema:
-        """get the schema of a dbt table and parse it into a common dbt model schema."""
+    def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:
+        """get the schema of a bigquery table and parse it into a common database schema."""
         schema = self._fetch_table_schema(project, dataset, table_id)
         catalog_schema = self._translate_schema_to_dbt_model(schema)
 
@@ -100,3 +106,22 @@ class BigQueryDatabase:
         """Split a table_id into project, dataset, and table."""
         project, dataset, table = table_id.split(".")
         return project, dataset, table
+    
+    def get_tables_in_dataset(self, project_id: str, dataset_id: str) -> list[DatabaseTable]:
+        """Get all tables in a BigQuery dataset."""
+
+        url = BigqueryUrl.BIGQUERY_TABLES.value.format(
+            project_id=project_id, dataset_id=dataset_id
+        )
+
+        response = requests.get(url, headers=self.headers, timeout=10)
+        response.raise_for_status()
+
+        tables_info = response.json()
+        tables = []
+        for table_info in tables_info["tables"]:
+            table_id = table_info["tableReference"]["tableId"]
+            schema = self.get_table_schema(project_id, dataset_id, table_id)
+            tables.append(schema)
+
+        return tables
