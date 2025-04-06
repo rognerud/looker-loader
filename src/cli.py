@@ -5,7 +5,8 @@ import yaml
 from rich.logging import RichHandler
 from src.utils import FileHandler
 from src.models.recipe import CookBook
-
+from src.models.config import Config
+from src.databases.bigquery.database import BigQueryDatabase
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
@@ -87,8 +88,24 @@ class Cli:
         logging.info("Loading Config")
         config = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
         # config = Config(**config)
-        logging.info(config)
+        config = Config(**config['config'])
 
+        schemas = []
+        b = BigQueryDatabase()
+
+        for d in config.bigquery:
+            logging.info(d)
+            if not d.tables:
+                logging.info("Finding all tables")
+                tables = b.get_tables_in_dataset(d.project_id, d.dataset_id)
+            else:
+                tables = d.tables
+
+            for table in tables:
+                schema = b.get_table_schema(d.project_id, d.dataset_id, table)
+                schemas.append(schema)
+
+        logging.info(schemas)
         # from src.databases.bigquery.database import BigQueryDatabase 
         # db = BigQueryDatabase()
         # a,b,c = db.split_table_id(table_id=args.table)

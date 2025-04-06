@@ -110,18 +110,12 @@ class BigQueryDatabase:
     def get_tables_in_dataset(self, project_id: str, dataset_id: str) -> list[DatabaseTable]:
         """Get all tables in a BigQuery dataset."""
 
-        url = BigqueryUrl.BIGQUERY_TABLES.value.format(
-            project_id=project_id, dataset_id=dataset_id
-        )
+        from google.cloud import bigquery
+        client = bigquery.Client()
+        dataset_url = f"{project_id}.{dataset_id}"
+        tables = client.list_tables(dataset_url)
 
-        response = requests.get(url, headers=self.headers, timeout=10)
-        response.raise_for_status()
-
-        tables_info = response.json()
-        tables = []
-        for table_info in tables_info["tables"]:
-            table_id = table_info["tableReference"]["tableId"]
-            schema = self.get_table_schema(project_id, dataset_id, table_id)
-            tables.append(schema)
-
-        return tables
+        table_list = []
+        for table in tables:
+            table_list.append(table.table_id)
+        return table_list # Make an API request.

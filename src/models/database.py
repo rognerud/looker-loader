@@ -11,10 +11,10 @@ class DatabaseField(BaseModel):
     mode: Optional[str] = None
 
 class DatabaseTable(BaseModel):
-    name: str = None
-    type: str = None
+    name: str
+    type: str
     description: Optional[str] = None
 
-    columns: Optional[List[DatabaseField]] = None
+    columns: Optional[List[DatabaseField]]
     labels: Optional[List[str]] = None
     tags: Optional[List[str]] = None
