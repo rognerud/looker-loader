@@ -20,7 +20,7 @@ class LookerRecipeDimension(LookerDimension):
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""
 
-    data_type: Optional[str] = None
+    type: Optional[str] = None
     regex_include: Optional[str] = None
     regex_exclude: Optional[str] = None
     tags: Optional[List[str]] = None

@@ -7,6 +7,7 @@ from src.utils import FileHandler
 from src.models.recipe import CookBook
 from src.models.config import Config
 from src.databases.bigquery.database import BigQueryDatabase
+from src.tools import recipe_mixer
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
@@ -105,9 +106,26 @@ class Cli:
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
 
-        logging.info(schemas)
+        seen = set()
+        columns = []
+        for scheme in schemas:
 
+            for column in scheme.columns:
+                logging.info(column)
 
+                if column.name not in seen:
+                    columns.append(column)
+                    seen.add(column.name)
+
+        logging.info(f"Unique columns: {columns}")
+
+        mixer = recipe_mixer.RecipeMixer(recipe)
+        for column in columns:
+            m = mixer.apply_mixture(
+                column
+            )
+            logging.info(f"Generated LookML: {m}")
+            
 def main():
     cli = Cli()
     cli.run()

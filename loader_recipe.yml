@@ -1,6 +1,6 @@
 recipes:
   - name: group_ids
-    actions:
+    dimension:
       group_label: Identifiers
     filters:
       regex_include: _id$|^pk_|_code$

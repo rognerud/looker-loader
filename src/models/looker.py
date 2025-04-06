@@ -20,8 +20,8 @@ class LookerBase(BaseModel):
 #  metaclass
 class LookerViewElement(LookerBase):
     """Looker data for a view element."""
-    # name: str = Field(default=None)
-    # type: str = Field(default=None)
+    name: str = Field(default=None)
+    type: str = Field(default=None)
 
     value_format_name: Optional[LookerValueFormatName] = Field(default=None)
     group_label: Optional[str] = None
@@ -119,7 +119,6 @@ class LookerDimension(LookerViewElement):
     suggestable: Optional[bool] = Field(default=None)
     case_sensitive: Optional[bool] = Field(default=None)
     allow_fill: Optional[bool] = Field(default=None)
-    render_as_image: Optional[bool] = Field(default=False)
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[bool] = Field(default=None)
 
