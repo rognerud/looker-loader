@@ -106,12 +106,7 @@ class Cli:
                 schemas.append(schema)
 
         logging.info(schemas)
-        # from src.databases.bigquery.database import BigQueryDatabase 
-        # db = BigQueryDatabase()
-        # a,b,c = db.split_table_id(table_id=args.table)
-        # schema = db.get_table_schema(a,b,c)
-        # import rich
-        # rich.print(schema)
+
 
 def main():
     cli = Cli()

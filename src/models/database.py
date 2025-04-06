@@ -12,8 +12,6 @@ class DatabaseField(BaseModel):
 
 class DatabaseTable(BaseModel):
     name: str
-    type: str
-    description: Optional[str] = None
 
     columns: Optional[List[DatabaseField]]
     labels: Optional[List[str]] = None

@@ -36,7 +36,6 @@ class BigQueryDatabase:
         table_info = response.json()
 
         schema = BigQueryTableSchema(fields=table_info["schema"]["fields"])
-
         return schema
 
     def _recurse_types(self, field: BigQueryFieldSchema, include_name=False) -> str:
@@ -79,7 +78,7 @@ class BigQueryDatabase:
                 self._recurse_type_fields(field.fields)
 
     def _translate_schema_to_dbt_model(
-        self, schema: BigQueryTableSchema
+        self, schema: BigQueryTableSchema, name: str
     ) -> dict:
         """Translate a BigQueryTableSchema to a dbt model schema."""
 
@@ -93,20 +92,15 @@ class BigQueryDatabase:
         catalog_schema = {}
         catalog_schema["columns"] = catalog_nodes
 
-        return DatabaseTable(**catalog_schema)
+        return DatabaseTable(name=name,**catalog_schema)
 
     def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:
         """get the schema of a bigquery table and parse it into a common database schema."""
         schema = self._fetch_table_schema(project, dataset, table_id)
-        catalog_schema = self._translate_schema_to_dbt_model(schema)
+        catalog_schema = self._translate_schema_to_dbt_model(schema, name=table_id)
 
         return catalog_schema
 
-    def split_table_id(self, table_id):
-        """Split a table_id into project, dataset, and table."""
-        project, dataset, table = table_id.split(".")
-        return project, dataset, table
-    
     def get_tables_in_dataset(self, project_id: str, dataset_id: str) -> list[DatabaseTable]:
         """Get all tables in a BigQuery dataset."""
 
