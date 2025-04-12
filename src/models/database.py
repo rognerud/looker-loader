@@ -1,18 +1,21 @@
-from typing import List, Optional, Union
-from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+from pydantic import BaseModel
+from typing import List, Optional, Dict
+
 
 class DatabaseField(BaseModel):
     name: str
     type: str
+    mode: Optional[str] = None
+    fields: Optional[List["DatabaseField"]] = None
     description: Optional[str] = None
 
-    labels: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    mode: Optional[str] = None
+    class Config:
+        from_attributes = True
+
 
 class DatabaseTable(BaseModel):
-    name: str
-
-    columns: Optional[List[DatabaseField]]
-    labels: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
+    fields: List[DatabaseField]
+    type: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    class Config:
+        from_attributes = True

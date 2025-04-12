@@ -106,21 +106,24 @@ class Cli:
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
 
+        def get_fields(thing, fields=[]):
+            """Get the fields from a schema"""
+            for field in thing.fields:
+                if field not in fields:
+                    fields.append(field)
+                if field.fields:
+                    fields.extend(get_fields(field))
+            return fields
+
         seen = set()
-        columns = []
+        fields = []
         for scheme in schemas:
-
-            for column in scheme.columns:
-                # logging.info(column)
-
-                if column.name not in seen:
-                    columns.append(column)
-                    seen.add(column.name)
+            get_fields(scheme, fields)
 
         # logging.info(f"Unique columns: {columns}")
 
         mixer = recipe_mixer.RecipeMixer(recipe)
-        for column in columns:
+        for column in fields:
             m = mixer.apply_mixture(
                 column
             )
