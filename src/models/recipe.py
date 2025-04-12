@@ -12,10 +12,27 @@ class LookerDerivedDimension(LookerDimension):
     sql: Optional[str] = None
     # $x is a placeholder for the field name
     html: Optional[str] = None
+    measures: Optional[List[LookerMeasure]] = None
+
 
 class LookerRecipeDimension(LookerDimension):
     """A recipe dimension in Looker"""
     variants: Optional[List[LookerDerivedDimension]] = None
+    measures: Optional[List[LookerMeasure]] = None
+
+    ### basic code for passing down attributes to measures.
+    ### TODO: should be extended.
+    @model_validator(mode="before")
+    def create(cls, values):
+        if values.get("measures") is not None:
+            inherited_children = []
+            for child in values.get("measures"):
+                child_data = child
+                if child_data.get("group_label") is None:
+                    child_data["group_label"] = values.get("group_label")
+                inherited_children.append(LookerMeasure(**child_data))
+            values["measures"] = inherited_children
+        return values
 
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""
@@ -47,7 +64,6 @@ class Recipe(BaseModel):
     name: str
     filters: RecipeFilter
     dimension: Optional[LookerRecipeDimension] = None
-    # measures: Optional[List[LookerMeasure]] = None
 
 
 class CookBook(BaseModel):

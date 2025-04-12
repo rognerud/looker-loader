@@ -95,9 +95,9 @@ class Cli:
         b = BigQueryDatabase()
 
         for d in config.bigquery:
-            logging.info(d)
+            # logging.info(d)
             if not d.tables:
-                logging.info("Finding all tables")
+                # logging.info("Finding all tables")
                 tables = b.get_tables_in_dataset(d.project_id, d.dataset_id)
             else:
                 tables = d.tables
@@ -111,13 +111,13 @@ class Cli:
         for scheme in schemas:
 
             for column in scheme.columns:
-                logging.info(column)
+                # logging.info(column)
 
                 if column.name not in seen:
                     columns.append(column)
                     seen.add(column.name)
 
-        logging.info(f"Unique columns: {columns}")
+        # logging.info(f"Unique columns: {columns}")
 
         mixer = recipe_mixer.RecipeMixer(recipe)
         for column in columns:
