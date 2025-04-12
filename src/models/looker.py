@@ -121,7 +121,6 @@ class LookerDimension(LookerViewElement):
     allow_fill: Optional[bool] = Field(default=None)
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[bool] = Field(default=None)
-
     tag_append: Optional[List[str]] = None
     description_append: Optional[str] = None
     description_prepend: Optional[str] = None

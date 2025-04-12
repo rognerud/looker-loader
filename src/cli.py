@@ -115,7 +115,6 @@ class Cli:
                     fields.extend(get_fields(field))
             return fields
 
-        seen = set()
         fields = []
         for scheme in schemas:
             get_fields(scheme, fields)
