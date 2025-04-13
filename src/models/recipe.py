@@ -5,6 +5,9 @@ from src.models.looker import (
     LookerDimension,
 )
 
+# Models for loading recipes, and for generating looker data from the combination of 
+# the database and the recipes
+
 class LookerDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
     suffix: str

@@ -29,16 +29,19 @@ class BigQueryDatabase:
         response = requests.get(url, headers=self.headers, timeout=10)
         response.raise_for_status()
 
-        table_info = response.json()
+        self.json_schema = response.json()
 
-        schema = DatabaseTable(name=table_id, fields=table_info["schema"]["fields"])
-        return schema
+    def _parse_schema(self) -> DatabaseTable:
+        """Parse the schema of a BigQuery table into a Pydantic model."""
+
+        self.parsed_schema = DatabaseTable(name=self.json_schema.table_id, fields=self.json_schema["schema"]["fields"])
 
     def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:
         """get the schema of a bigquery table and parse it into a common database schema."""
-        schema = self._fetch_table_schema(project, dataset, table_id)
+        self._fetch_table_schema(project, dataset, table_id)
+        self._parse_schema()
 
-        return schema
+        return self.parsed_schema
 
     def get_tables_in_dataset(self, project_id: str, dataset_id: str) -> list[DatabaseTable]:
         """Get all tables in a BigQuery dataset."""
