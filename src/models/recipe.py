@@ -8,30 +8,44 @@ from src.models.looker import (
 class LookerDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
     suffix: str
-    # $x is a placeholder for the field name
     sql: Optional[str] = None
-    # $x is a placeholder for the field name
     html: Optional[str] = None
     measures: Optional[List[LookerMeasure]] = None
 
+    @model_validator(mode="before")
+    def fix_name(cls, values):
+        values["name"] = f"{values.get('parent_name')}_{values.get('suffix')}"
+        values["sql"] = values.get("sql").replace("$X", f"${{{values.get('parent_name')}}}")
+        return values
 
 class LookerRecipeDimension(LookerDimension):
     """A recipe dimension in Looker"""
     variants: Optional[List[LookerDerivedDimension]] = None
     measures: Optional[List[LookerMeasure]] = None
-    fields: Optional[List[LookerDerivedDimension]] = None
-    ### basic code for passing down attributes to measures.
-    ### TODO: should be extended.
+    fields: Optional[List[LookerDimension]] = None
+
     @model_validator(mode="before")
     def create(cls, values):
+
+        def apply(field : dict, list_params : List[str]):
+            for param in list_params:
+                if field.get(param) is None:
+                    field[f"parent_{param}"] = values.get(param)
+            return field
+
         if values.get("measures") is not None:
             inherited_children = []
-            for child in values.get("measures"):
-                child_data = child
-                if child_data.get("group_label") is None:
-                    child_data["group_label"] = values.get("group_label")
-                inherited_children.append(LookerMeasure(**child_data))
+            for child in values.get("measures", []):
+                child = apply(child, ["name","sql","type","group_label", "description", "tags"])
+                inherited_children.append(LookerMeasure(**child))
             values["measures"] = inherited_children
+
+        if values.get("variants") is not None:
+            inherited_children = []
+            for child in values.get("variants", []):
+                child = apply(child, ["name","type","group_label", "description", "tags"])
+                inherited_children.append(LookerDerivedDimension(**child))
+            values["variants"] = inherited_children
         return values
 
 class RecipeFilter(BaseModel):

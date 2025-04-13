@@ -108,22 +108,22 @@ class Cli:
 
         mixer = recipe_mixer.RecipeMixer(recipe)
 
-        def get_fields(thing, fields=[], log=False):
+        def get_fields(thing, fields=[], measures=[]):
             """Get the fields from a schema"""
             for field in thing.fields:
-                #fields.append(
-                mix = mixer.apply_mixture(field)#)
+                base_dimension, dimensions, measures = mixer.apply_mixture(field)
 
                 if field.fields:
-                    mix.fields = get_fields(field, log=True)
+                    base_dimension.fields = get_fields(field)
                 
-                if log:
-                    logging.info(mix)
-                fields.append(mix)
-            return fields
+                fields.append(base_dimension)
+                if dimensions:
+                    fields.extend(dimensions)
+            return fields, measures
 
         for scheme in schemas:
-            measures = get_fields(scheme)
+            fields, measures = get_fields(scheme)
+            logging.info(fields)
             logging.info(measures)
 
 def main():

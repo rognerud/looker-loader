@@ -6,17 +6,19 @@ class DatabaseField(BaseModel):
     name: str
     type: str
     mode: Optional[str] = None
-    fields: Optional[List["DatabaseField"]] = None
     description: Optional[str] = None
     parent_name: Optional[str] = None
+    parent_mode: Optional[str] = None
     parent_type: Optional[str] = None
     sql: Optional[str] = None
+    fields: Optional[List["DatabaseField"]] = None
 
     @model_validator(mode="before")
     def create(cls, values):
-        if hasattr(values, "fields"):
+        if values.get("fields") is not None:
             inherited_children = []
-            for child in values.get("field"):
+            for child in values.get("fields"):
+                child["parent_mode"] = values.get("mode")
                 child["parent_type"] = values.get("type")
                 if hasattr(values, "parent_name"):
                     child["parent_name"] = f"{values.get('parent_name')}.{values.get('name')}"
@@ -24,13 +26,15 @@ class DatabaseField(BaseModel):
                     child["parent_name"] = values.get("name")
                 inherited_children.append(DatabaseField(**child))
             values["fields"] = inherited_children
-
+        return values
+    
+    @model_validator(mode="after")
+    def create_sql(cls, values):
         base = "${TABLE}"
-        if hasattr(values, "parent_type") and values.parent_type == "RECORD":
-            values["sql"] = values["name"]
+        if values.parent_mode == "REPEATED":
+            values.sql = values.name
         else:
-            values["sql"] = f"{base}.{values["name"]}"
-
+            values.sql = f"{base}.{values.name}"
         return values
 
     class Config:

@@ -1,6 +1,6 @@
 from models.database import DatabaseField, DatabaseTable
-from models.recipe import Recipe, CookBook, RecipeFilter
-from models.looker import LookerDimension
+from models.recipe import Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerDerivedDimension
+from models.looker import LookerDimension, LookerMeasure
 from typing import List, Optional
 import re
 import logging
@@ -155,27 +155,51 @@ class RecipeMixer:
 
         return combined
 
-    def apply_mixture(self, column: DatabaseField) -> LookerDimension:
+    def _flatten_mixture(self, mixture: LookerRecipeDimension) -> tuple:
+        """
+        Flatten the mixture into dimensions and measures.
+        """
+
+        def recurse(mixture, dimensions = [], measures = []):
+            if mixture.measures:
+                for measure in mixture.measures:
+                    measures.append(LookerMeasure(**measure))
+            if mixture.variants:
+                for variant in mixture.variants:
+                    dimensions.append(LookerDerivedDimension(**variant))
+                    if variant.variants:
+                        var_dimensions, var_measures = recurse(variant)
+                        dimensions.extend(var_dimensions)
+                        measures.extend(var_measures)
+            
+            return dimensions, measures
+
+        return recurse(mixture)
+
+    def apply_mixture(self, column: DatabaseField) -> tuple:
         """
         Create a mixture for a column and apply it.
         go through the recipes in the cookbook and apply the relevant ones to the column
         """
-        logging.info(column)
+
         mixture = self.create_mixture(column)
         if mixture:
-            # logging.info(f"Applying mixture: {mixture}")
+
             mixture_ingredients = mixture.model_dump()
             column_ingredients = column.model_dump()
             a = self.combine_dicts(column_ingredients, mixture_ingredients)
-            applied_mixture = LookerDimension(
+            logging.info(a)
+            applied_mixture = LookerRecipeDimension(
                 **a
             )
+            base_dimension = applied_mixture
+            dimensions, measures = self._flatten_mixture(applied_mixture)
             # modified_column = self._merge_models(applied_mixture, column)
-            return applied_mixture
+            return base_dimension, dimensions, measures
     
         else:
-            logging.warning(f"No mixture found for column {column.name}")
-            applied_mixture = LookerDimension(
+            # logging.warning(f"No mixture found for column {column.name}")
+            applied_mixture = LookerRecipeDimension(
                 **column.model_dump()
             )
-            return applied_mixture
+            return applied_mixture, None, None
