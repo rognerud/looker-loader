@@ -6,6 +6,7 @@ from typing import List, Optional, Dict
 class DatabaseField(BaseModel):
     name: str
     type: str
+    order: int
     mode: Optional[str] = None
     description: Optional[str] = None
     parent_name: Optional[str] = None
@@ -15,7 +16,8 @@ class DatabaseField(BaseModel):
     fields: Optional[List["DatabaseField"]] = None
 
     @model_validator(mode="before")
-    def create(cls, values):
+    def push_down_attributes(cls, values):
+        """ push parent_name, parent_mode and parent_type to children """
         if values.get("fields") is not None:
             inherited_children = []
             for child in values.get("fields"):
@@ -29,8 +31,23 @@ class DatabaseField(BaseModel):
             values["fields"] = inherited_children
         return values
     
+    @model_validator(mode="before")
+    def push_order(cls, values):
+        """ push order to children 
+            order of the fields from the parent table
+            is used to order the children fields
+        """
+        if values.get("fields") is not None:
+            fields = []
+            for i, field in enumerate(values.get("fields")):
+                field["order"] = i
+                fields.append(field)
+            values["fields"] = fields
+        return values
+
     @model_validator(mode="after")
     def create_sql(cls, values):
+        """Create SQL field from name and parent_name"""
         base = "${TABLE}"
         if values.parent_mode == "REPEATED":
             values.sql = values.name
@@ -48,3 +65,18 @@ class DatabaseTable(BaseModel):
     labels: Optional[Dict[str, str]] = None
     class Config:
         from_attributes = True
+
+    @model_validator(mode="before")
+    def push_order(cls, values):
+        """ push order to children 
+            order of the fields from the parent table
+            is used to order the children fields
+        """
+        if values.get("fields") is not None:
+            fields = []
+            for i, field in enumerate(values.get("fields")):
+                field["order"] = i
+                fields.append(field)
+            values["fields"] = fields
+        return values
+

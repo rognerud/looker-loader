@@ -6,6 +6,8 @@ from src.models.database import DatabaseTable
 
 from src.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 
+import logging
+
 class BigQueryDatabase:
     def __init__(self):
         """Initialize the BigQueryDatabase class."""
@@ -30,11 +32,13 @@ class BigQueryDatabase:
         response.raise_for_status()
 
         self.json_schema = response.json()
+        logging.info(self.json_schema)
+        quit()
 
     def _parse_schema(self) -> DatabaseTable:
         """Parse the schema of a BigQuery table into a Pydantic model."""
 
-        self.parsed_schema = DatabaseTable(name=self.json_schema.table_id, fields=self.json_schema["schema"]["fields"])
+        self.parsed_schema = DatabaseTable(name=self.json_schema.get("table_id"), fields=self.json_schema["schema"]["fields"])
 
     def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:
         """get the schema of a bigquery table and parse it into a common database schema."""
