@@ -84,7 +84,7 @@ class Cli:
         data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
         recipe = CookBook(**data) 
 
-        logging.info(recipe)
+        # logging.info(recipe)
 
         logging.info("Loading Config")
         config = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
@@ -106,28 +106,26 @@ class Cli:
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
 
-        def get_fields(thing, fields=[]):
+        mixer = recipe_mixer.RecipeMixer(recipe)
+
+        def get_fields(thing, fields=[], log=False):
             """Get the fields from a schema"""
             for field in thing.fields:
-                if field not in fields:
-                    fields.append(field)
+                #fields.append(
+                mix = mixer.apply_mixture(field)#)
+
                 if field.fields:
-                    fields.extend(get_fields(field))
+                    mix.fields = get_fields(field, log=True)
+                
+                if log:
+                    logging.info(mix)
+                fields.append(mix)
             return fields
 
-        fields = []
         for scheme in schemas:
-            get_fields(scheme, fields)
+            measures = get_fields(scheme)
+            logging.info(measures)
 
-        # logging.info(f"Unique columns: {columns}")
-
-        mixer = recipe_mixer.RecipeMixer(recipe)
-        for column in fields:
-            m = mixer.apply_mixture(
-                column
-            )
-            logging.info(f"Generated LookML: {m}")
-            
 def main():
     cli = Cli()
     cli.run()

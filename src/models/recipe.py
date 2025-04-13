@@ -19,7 +19,7 @@ class LookerRecipeDimension(LookerDimension):
     """A recipe dimension in Looker"""
     variants: Optional[List[LookerDerivedDimension]] = None
     measures: Optional[List[LookerMeasure]] = None
-
+    fields: Optional[List[LookerDerivedDimension]] = None
     ### basic code for passing down attributes to measures.
     ### TODO: should be extended.
     @model_validator(mode="before")

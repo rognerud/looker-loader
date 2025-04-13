@@ -160,9 +160,10 @@ class RecipeMixer:
         Create a mixture for a column and apply it.
         go through the recipes in the cookbook and apply the relevant ones to the column
         """
+        logging.info(column)
         mixture = self.create_mixture(column)
         if mixture:
-            logging.info(f"Applying mixture: {mixture}")
+            # logging.info(f"Applying mixture: {mixture}")
             mixture_ingredients = mixture.model_dump()
             column_ingredients = column.model_dump()
             a = self.combine_dicts(column_ingredients, mixture_ingredients)

@@ -124,7 +124,8 @@ class LookerDimension(LookerViewElement):
     tag_append: Optional[List[str]] = None
     description_append: Optional[str] = None
     description_prepend: Optional[str] = None
-
+    fields: Optional[List['LookerDimension']] = None
+    sql: Optional[str] = None
     @field_validator("timeframes", mode="before")
     def check_enums(cls, values):
         if values is not None:
@@ -141,6 +142,25 @@ class LookerDimension(LookerViewElement):
                     values["timeframes"] = valid_timeframes
 
         return values
+
+class LookerField(LookerViewElement):
+    """ with description of each attribute
+    """
+    field_type: str = Field(default=None, description="The meta-type of the field")
+
+    convert_tz: Optional[bool] = Field(default=None)
+    timeframes: Optional[List[LookerTimeFrame]] = Field(default=None)
+    can_filter: Optional[Union[bool, str]] = Field(default=None)
+    group_item_label: Optional[str] = Field(default=None)
+    order_by_field: Optional[str] = Field(default=None)
+    suggestable: Optional[bool] = Field(default=None)
+    case_sensitive: Optional[bool] = Field(default=None)
+    allow_fill: Optional[bool] = Field(default=None)
+    required_access_grants: Optional[List[str]] = Field(default=None)
+    html: Optional[bool] = Field(default=None)
+    tag_append: Optional[List[str]] = None
+    description_append: Optional[str] = None
+    description_prepend: Optional[str] = None
 
 
 class Looker(BaseModel):
