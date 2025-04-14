@@ -1,13 +1,15 @@
 recipes:
   - name: group_ids
-    dimension:
-      group_label: Identifiers
     filters:
       regex_include: _id$|^pk_|_code$
+    dimension:
+      group_label: Identifiers
+      measures:
+        - type: count_distinct
   - name: second_values
     filters:
       regex_include: _seconds$
-      # type: number
+      type: number
     dimension:
       group_label: Duration
       variants:

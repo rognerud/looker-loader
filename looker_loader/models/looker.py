@@ -67,10 +67,7 @@ class LookerMeasure(LookerViewElement):
     """
 
     # Required fields
-    type: Optional[LookerMeasureType]
-
-    # Common optional fields
-    name: Optional[str] = None
+    type: LookerMeasureType
 
     # Fields specific to certain measure types
     approximate: Optional[bool] = None  # For count_distinct

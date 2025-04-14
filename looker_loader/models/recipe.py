@@ -43,7 +43,9 @@ class LookerMixtureMeasure(LookerMeasure):
 class LookerMixtureDimension(LookerRecipeDimension):
     measures: Optional[List[LookerMixtureMeasure]] = None
     variants: Optional[List['LookerMixtureDimension']] = None
+    fields: Optional[List['LookerMixtureDimension']] = None
     suffix: Optional[str] = None
+    is_variant: Optional[bool] = None
 
     @model_validator(mode="before")
     def create(cls, values):
