@@ -1,5 +1,5 @@
 import logging
-from src.exceptions import CliError
+from looker_loader.exceptions import CliError
 import json
 import yaml
 

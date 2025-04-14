@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 import warnings
 
-from src.enums import (
+from looker_loader.enums import (
     # LookerJoinType,
     LookerMeasureType,
     # LookerRelationshipType,

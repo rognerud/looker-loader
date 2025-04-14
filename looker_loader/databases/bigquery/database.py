@@ -2,9 +2,9 @@ import google.auth
 from google.auth.transport.requests import Request
 import requests
 
-from src.models.database import DatabaseTable
+from looker_loader.models.database import DatabaseTable
 
-from src.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
+from looker_loader.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 
 import logging
 

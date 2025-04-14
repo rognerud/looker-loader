@@ -3,11 +3,11 @@ import os
 import logging
 import yaml
 from rich.logging import RichHandler
-from src.utils import FileHandler
-from src.models.recipe import CookBook
-from src.models.config import Config
-from src.databases.bigquery.database import BigQueryDatabase
-from src.tools import recipe_mixer
+from looker_loader.utils import FileHandler
+from looker_loader.models.recipe import CookBook
+from looker_loader.models.config import Config
+from looker_loader.databases.bigquery.database import BigQueryDatabase
+from looker_loader.tools import recipe_mixer
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )

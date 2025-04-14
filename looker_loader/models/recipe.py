@@ -1,6 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel, model_validator
-from src.models.looker import (
+from looker_loader.models.looker import (
     LookerMeasure,
     LookerDimension,
 )

@@ -1,6 +1,6 @@
-from models.database import DatabaseField, DatabaseTable
-from models.recipe import Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerDerivedDimension
-from models.looker import LookerDimension, LookerMeasure
+from looker_loader.models.database import DatabaseField, DatabaseTable
+from looker_loader.models.recipe import Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerDerivedDimension
+from looker_loader.models.looker import LookerDimension, LookerMeasure
 from typing import List, Optional
 import re
 import logging
