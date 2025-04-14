@@ -8,24 +8,41 @@ from looker_loader.models.looker import (
 # Models for loading recipes, and for generating looker data from the combination of 
 # the database and the recipes
 
-class LookerDerivedDimension(LookerDimension):
+class LookerRecipeDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
     suffix: str
     sql: Optional[str] = None
     html: Optional[str] = None
     measures: Optional[List[LookerMeasure]] = None
-
-    @model_validator(mode="before")
-    def fix_name(cls, values):
-        values["name"] = f"{values.get('parent_name')}_{values.get('suffix')}"
-        values["sql"] = values.get("sql").replace("$X", f"${{{values.get('parent_name')}}}")
-        return values
+    variants: Optional[List['LookerDerivedDimension']] = None
 
 class LookerRecipeDimension(LookerDimension):
     """A recipe dimension in Looker"""
-    variants: Optional[List[LookerDerivedDimension]] = None
+    variants: Optional[List[LookerRecipeDerivedDimension]] = None
     measures: Optional[List[LookerMeasure]] = None
     fields: Optional[List[LookerDimension]] = None
+
+class LookerMixtureMeasure(LookerMeasure):
+    """A derived measure in Looker"""
+    name: str
+    sql: str
+    html: Optional[str] = None
+
+    @model_validator(mode="before")
+    def fix_name(cls, values):
+        values["name"] = f"m_{values.get('type')}_{values.get('parent_name')}"
+        if values.get("sql") is None:
+            values["sql"] = f"${{{values.get("parent_name")}}}"
+        if values.get("group_label") is None:
+            values["group_label"] = values.get("parent_group_label")
+        if values.get("description") is None:
+            values["description"] = f"{values.get('type')} of {values.get("parent_name")} : {values.get("parent_description")}"
+        return values
+
+class LookerMixtureDimension(LookerRecipeDimension):
+    measures: Optional[List[LookerMixtureMeasure]] = None
+    variants: Optional[List['LookerMixtureDimension']] = None
+    suffix: Optional[str] = None
 
     @model_validator(mode="before")
     def create(cls, values):
@@ -39,16 +56,28 @@ class LookerRecipeDimension(LookerDimension):
         if values.get("measures") is not None:
             inherited_children = []
             for child in values.get("measures", []):
-                child = apply(child, ["name","sql","type","group_label", "description", "tags"])
-                inherited_children.append(LookerMeasure(**child))
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                inherited_children.append(child)
             values["measures"] = inherited_children
 
         if values.get("variants") is not None:
             inherited_children = []
             for child in values.get("variants", []):
-                child = apply(child, ["name","type","group_label", "description", "tags"])
-                inherited_children.append(LookerDerivedDimension(**child))
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                inherited_children.append(child)
             values["variants"] = inherited_children
+        return values
+
+    @model_validator(mode="before")
+    def fix_name(cls, values):
+        if values.get("suffix") is not None:
+            values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
+            if values.get("group_label") is None:
+                values["group_label"] = values.get("parent_group_label")
+            if values.get("description") is None:
+                values["description"] = f"derived {values.get('type')} of {values.get("parent_name")} : {values.get("parent_description")}"
+            values["type"] = values.get("parent_type", "string")
+            values["sql"] = values.get("sql").replace("$x", f"${{{values.get('parent_name')}}}")
         return values
 
 class RecipeFilter(BaseModel):
@@ -68,7 +97,6 @@ class RecipeFilter(BaseModel):
             raise ValueError("At least one field must be specified.")
         return values
 
-
 class Recipe(BaseModel):
     """
     A recipe for what to generate automatically in Looker
@@ -81,7 +109,6 @@ class Recipe(BaseModel):
     name: str
     filters: RecipeFilter
     dimension: Optional[LookerRecipeDimension] = None
-
 
 class CookBook(BaseModel):
     """A cookbook of recipes"""

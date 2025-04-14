@@ -75,19 +75,29 @@ class Cli:
 
         return file_path
 
+    def _load_recipe(self, folder: str = None):
+        """Load the recipe from a yaml file"""
+        args = self._args_parser.parse_args()
+        if folder is None:
+            folder = args.config
+        if not os.path.exists(folder):
+            raise FileNotFoundError(f"Folder {folder} does not exist")
+
+        data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
+        self.recipe = CookBook(**data)
+        self.mixer = recipe_mixer.RecipeMixer(self.recipe)
+
     def run(self):
         """Run the CLI"""
         args = self._args_parser.parse_args()
 
         logging.info("Loading Recipe")
-        folder = args.config
-        data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
-        recipe = CookBook(**data) 
+        self._load_recipe()
 
         # logging.info(recipe)
 
         logging.info("Loading Config")
-        config = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
+        config = self._file_handler.read(f"{args.config}/loader_config.yml", file_type="yaml")
         # config = Config(**config)
         config = Config(**config['config'])
 
@@ -106,12 +116,10 @@ class Cli:
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
 
-        mixer = recipe_mixer.RecipeMixer(recipe)
-
         def get_fields(thing, fields=[], measures=[]):
             """Get the fields from a schema"""
             for field in thing.fields:
-                base_dimension, dimensions, measures = mixer.apply_mixture(field)
+                base_dimension, dimensions, measures = self.mixer.apply_mixture(field)
 
                 if field.fields:
                     base_dimension.fields = get_fields(field)

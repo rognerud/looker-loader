@@ -1,0 +1,19 @@
+recipes:
+  - name: group_ids
+    dimension:
+      group_label: Identifiers
+    filters:
+      regex_include: _id$|^pk_|_code$
+  - name: second_values
+    filters:
+      regex_include: _seconds$
+    dimension:
+      group_label: Duration
+      variants:
+        - suffix: minutes
+          sql: $x/60
+          type: number
+          measures:
+            - type: sum
+      measures:
+        - type: sum

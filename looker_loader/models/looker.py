@@ -124,8 +124,9 @@ class LookerDimension(LookerViewElement):
     tag_append: Optional[List[str]] = None
     description_append: Optional[str] = None
     description_prepend: Optional[str] = None
-    fields: Optional[List['LookerDimension']] = None
     sql: Optional[str] = None
+    fields: Optional[List['LookerDimension']] = None
+
     @field_validator("timeframes", mode="before")
     def check_enums(cls, values):
         if values is not None:
