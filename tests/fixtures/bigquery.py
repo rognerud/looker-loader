@@ -64,7 +64,7 @@ fixture_1 = """
 
 """
 
-@pytest.fixture
+# @pytest.fixture
 def bigquery_schema_1():
     """Fixture for BigQuery schema"""
     db = BigQueryDatabase()

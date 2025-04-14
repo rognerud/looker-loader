@@ -9,7 +9,7 @@ recipes:
   - name: second_values
     filters:
       regex_include: _seconds$
-      type: number
+      # type: number
     dimension:
       group_label: Duration
       variants:

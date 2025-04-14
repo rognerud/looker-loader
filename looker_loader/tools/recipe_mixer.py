@@ -160,21 +160,33 @@ class RecipeMixer:
         Flatten the mixture into dimensions and measures.
         """
 
-        def recurse(mixture, dimensions = [], measures = []):
-            if mixture.measures:
-                for measure in mixture.measures:
-                    measures.append(measure.model_dump())
+        def recurse_variants(mixture, dimensions = []):
+            dimensions.append(mixture)
             if mixture.variants:
                 for variant in mixture.variants:
                     dimensions.append(variant)
                     if variant.variants:
-                        var_dimensions, var_measures = recurse(variant)
+                        var_dimensions = recurse_variants(variant)
                         dimensions.extend(var_dimensions)
-                        measures.extend(var_measures)
-            
-            return dimensions, measures
+            return dimensions
 
-        return recurse(mixture)
+        def recurse_fields(mixture, dimensions = []):
+            if mixture.fields:
+                for field in mixture.fields:
+                    if field.variants:
+                        var_dimensions = recurse_variants(field)
+                        dimensions.extend(var_dimensions)
+                    if field.fields:
+                        field_dimensions = recurse_fields(field)
+                        dimensions.extend(field_dimensions)
+            mixture.fields = dimensions
+
+        if mixture.fields:
+            mixture = recurse_fields(mixture)        
+        if mixture.variants:
+            mixture = recurse_variants(mixture)
+
+        return mixture
 
     def apply_mixture(self, column: DatabaseField) -> tuple:
         """
@@ -188,21 +200,18 @@ class RecipeMixer:
             mixture_ingredients = mixture.model_dump()
             column_ingredients = column.model_dump()
             a = self.combine_dicts(column_ingredients, mixture_ingredients)
-            from rich import print
-            # a.pop("measures")
-            # a.pop("variants")
-            # print(a)
+
             applied_mixture = LookerMixtureDimension(
                 **a
             )
-            base_dimension = applied_mixture #.pop("variants").pop("measures")
-            dimensions, measures = self._flatten_mixture(applied_mixture)
-            # modified_column = self._merge_models(applied_mixture, column)
-            return base_dimension, dimensions, measures
+
+            dimensions = self._flatten_mixture(applied_mixture)
+
+            return dimensions
     
         else:
             logging.warning(f"No mixture found for column {column.name}")
             applied_mixture = LookerMixtureDimension(
                 **column.model_dump()
             )
-            return applied_mixture, None, None
+            return applied_mixture, None

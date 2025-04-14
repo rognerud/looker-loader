@@ -12,6 +12,15 @@ class BigQueryDatabase:
     def __init__(self):
         """Initialize the BigQueryDatabase class."""
         self.database_type = "bigquery"
+        # credentials, _ = google.auth.default()
+        # credentials.refresh(Request())
+        # self.headers = {
+        #     "Authorization": f"Bearer {credentials.token}",
+        #     "Content-Type": "application/json",
+        # }
+
+    def init(self):
+        """Authenticate the user with Google Cloud using default credentials."""
         credentials, _ = google.auth.default()
         credentials.refresh(Request())
         self.headers = {
@@ -23,7 +32,7 @@ class BigQueryDatabase:
         self, project_id: str, dataset_id: str, table_id: str
     ) -> DatabaseTable:
         """Fetch the schema of a BigQuery table and parse it into a Pydantic model."""
-
+        self.init()
         url = BigqueryUrl.BIGQUERY.value.format(
             project_id=project_id, dataset_id=dataset_id, table_id=table_id
         )

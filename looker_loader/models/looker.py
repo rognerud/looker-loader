@@ -3,9 +3,8 @@ from pydantic import BaseModel, Field, model_validator, field_validator, Validat
 import warnings
 
 from looker_loader.enums import (
-    # LookerJoinType,
+    LookerType,
     LookerMeasureType,
-    # LookerRelationshipType,
     LookerTimeFrame,
     LookerValueFormatName,
 )
@@ -152,8 +151,30 @@ class LookerDimension(LookerViewElement):
 
         return values
 
+class LookerMea(BaseModel):
+    """Looker data for a measure."""
+
+    name: str
+    type: LookerMeasureType
+    sql: str
+    group_label: Optional[str]
+    description: Optional[str]
+    tags: Optional[List[str]]
+    hidden: Optional[bool]
+
+class LookerDim(BaseModel):
+    """Looker data for a dimension."""
+
+    name: str
+    type: LookerType
+    sql: str
+    group_label: Optional[str]
+    description: Optional[str]
+    tags: Optional[List[str]]
+    hidden: Optional[bool]
+    measures: Optional[List[LookerMea]] = None
+    fields: Optional[List["LookerDim"]] = None
 
 class Looker(BaseModel):
     """Looker data for a model."""
-
-    dimensions: Optional[List[LookerDimension]] = None
+    fields: Optional[List[LookerDim]] = None
