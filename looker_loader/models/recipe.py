@@ -4,6 +4,7 @@ from looker_loader.models.looker import (
     LookerMeasure,
     LookerDimension,
 )
+from looker_loader.enums import LookerType
 
 # Models for loading recipes, and for generating looker data from the combination of 
 # the database and the recipes
@@ -14,7 +15,7 @@ class LookerRecipeDerivedDimension(LookerDimension):
     sql: Optional[str] = None
     html: Optional[str] = None
     measures: Optional[List[LookerMeasure]] = None
-    variants: Optional[List['LookerDerivedDimension']] = None
+    variants: Optional[List['LookerRecipeDerivedDimension']] = None
 
 class LookerRecipeDimension(LookerDimension):
     """A recipe dimension in Looker"""
@@ -83,7 +84,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""
 
-    type: Optional[str] = None
+    type: Optional[LookerType] = None
     regex_include: Optional[str] = None
     regex_exclude: Optional[str] = None
     tags: Optional[List[str]] = None

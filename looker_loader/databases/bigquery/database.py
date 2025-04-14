@@ -32,12 +32,9 @@ class BigQueryDatabase:
         response.raise_for_status()
 
         self.json_schema = response.json()
-        logging.info(self.json_schema)
-        quit()
 
     def _parse_schema(self) -> DatabaseTable:
         """Parse the schema of a BigQuery table into a Pydantic model."""
-
         self.parsed_schema = DatabaseTable(name=self.json_schema.get("table_id"), fields=self.json_schema["schema"]["fields"])
 
     def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:

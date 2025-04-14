@@ -1,11 +1,14 @@
 from pydantic import BaseModel, model_validator
 from typing import List, Optional, Dict
-
+from looker_loader.enums import (
+    LookerType,
+    LookerBigQueryDataType
+)
 # Models for database information loading
 
 class DatabaseField(BaseModel):
     name: str
-    type: str
+    type: LookerType
     order: int
     mode: Optional[str] = None
     description: Optional[str] = None
@@ -14,6 +17,13 @@ class DatabaseField(BaseModel):
     parent_type: Optional[str] = None
     sql: Optional[str] = None
     fields: Optional[List["DatabaseField"]] = None
+
+    @model_validator(mode="before")
+    def adjust_type(cls, values):
+        """Adjust the type of the field based on the db_type."""
+        db_type = values.get("type")
+        values["type"] = LookerBigQueryDataType.get(db_type)
+        return values
 
     @model_validator(mode="before")
     def push_down_attributes(cls, values):
@@ -65,6 +75,8 @@ class DatabaseTable(BaseModel):
     labels: Optional[Dict[str, str]] = None
     class Config:
         from_attributes = True
+
+
 
     @model_validator(mode="before")
     def push_order(cls, values):

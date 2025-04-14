@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import Literal
 class ExtendedEnum(Enum):
     @classmethod
     def values(cls):
@@ -9,21 +9,42 @@ class ExtendedEnum(Enum):
     def get(cls, key):
         return member.value if (member := cls.__members__.get(key)) else None
 
-class LookerMeasureType(str, ExtendedEnum):
-    NUMBER = "number"
-    STRING = "string"
-    AVERAGE = "average"
-    AVERAGE_DISTINCT = "average_distinct"
-    COUNT = "count"
-    COUNT_DISTINCT = "count_distinct"
-    LIST = "list"
-    MAX = "max"
-    MEDIAN = "median"
-    MEDIAN_DISTINCT = "median_distinct"
-    MIN = "min"
-    SUM = "sum"
-    SUM_DISTINCT = "sum_distinct"
+LookerMeasureType = Literal[
+    "number",
+    "string",
+    "average",
+    "average_distinct",
+    "count",
+    "count_distinct",
+    "list",
+    "max",
+    "median",
+    "median_distinct",
+    "min",
+    "sum",
+    "sum_distinct",
+    "yesno",
+    "percentage_of_previous",
+    "percentage_of_total",
+    "percentile",
+    "percentile_distinct",
+    "running_total",
+]
 
+LookerType = Literal[
+        "bin",
+        "date",
+        "date_time",
+        "distance",
+        "duration",
+        "location",
+        "number",
+        "string",
+        "tier",
+        "time",
+        "yesno",
+        "zipcode",
+    ]
 
 class LookerTimeMeasureType(str, ExtendedEnum):
     MIN = "min"
@@ -128,7 +149,7 @@ class LookerBigQueryDataType(str, ExtendedEnum):
     TIMESTAMP = "timestamp"
     DATETIME = "datetime"
     DATE = "date"
-    TIME = "string"  # Can time-only be handled better in looker?
+    TIME = "string" 
     BOOL = "yesno"
     GEOGRAPHY = "string"
     BYTES = "string"

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 import warnings
 
@@ -21,7 +21,21 @@ class LookerBase(BaseModel):
 class LookerViewElement(LookerBase):
     """Looker data for a view element."""
     name: str = Field(default=None)
-    type: str = Field(default=None)
+    type: Optional[Literal[
+        "bin",
+        "date",
+        "date_time",
+        "distance",
+        "duration",
+        "location",
+        "number",
+        "string",
+        "tier",
+        "time",
+        "yesno",
+        "zipcode",
+        None
+    ]] = None
 
     value_format_name: Optional[LookerValueFormatName] = Field(default=None)
     group_label: Optional[str] = None
@@ -53,7 +67,7 @@ class LookerMeasure(LookerViewElement):
     """
 
     # Required fields
-    type: LookerMeasureType
+    type: Optional[LookerMeasureType]
 
     # Common optional fields
     name: Optional[str] = None
@@ -121,9 +135,6 @@ class LookerDimension(LookerViewElement):
     allow_fill: Optional[bool] = Field(default=None)
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[bool] = Field(default=None)
-    tag_append: Optional[List[str]] = None
-    description_append: Optional[str] = None
-    description_prepend: Optional[str] = None
     sql: Optional[str] = None
     fields: Optional[List['LookerDimension']] = None
 
