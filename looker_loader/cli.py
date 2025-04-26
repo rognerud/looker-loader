@@ -15,6 +15,25 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
 
+def remove_empty_from_dict(data):
+  """Recursively removes keys with None or empty list values from a dictionary.
+
+  Args:
+    data: The dictionary to clean.
+
+  Returns:
+    A new dictionary with empty values removed.
+  """
+  if isinstance(data, dict):
+    return {
+        k: remove_empty_from_dict(v)
+        for k, v in data.items()
+        if v is not None and (not isinstance(v, list) or len(v) > 0)
+    }
+  elif isinstance(data, list):
+    return [remove_empty_from_dict(item) for item in data if item is not None and (not isinstance(item, list) or len(item) > 0)]
+  else:
+    return data
 
 class Cli:
     HEADER = """
@@ -144,11 +163,22 @@ class Cli:
             r = lookml.generate(
                 model=model,
             )
-            # view = self._write_lookml_file(
-            #     output_dir='output',
-            #     file_path='test.view.lkml',
-            #     contents=str(fields)#lkml.dump(fields),
-            # )
+
+            flat_r = []
+            for thing in r:
+                from rich import print
+
+
+                t = remove_empty_from_dict(thing)
+
+                # if t.get("name") == "obt_penetrace_tv2__weekly_data__answer_value_response_information":
+                print(t)
+
+                view = self._write_lookml_file(
+                    output_dir='output',
+                    file_path='test.view.lkml',
+                    contents=lkml.dump(remove_empty_from_dict(t)),
+                )
 
 def main():
     cli = Cli()

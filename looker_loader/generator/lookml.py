@@ -54,7 +54,7 @@ class LookmlGenerator:
         logging.info(model)
 
         for field in model.fields:
-            dimensions.append(field)
+            dimensions.append(field.model_dump())
             
         return dimensions
 
@@ -64,7 +64,7 @@ class LookmlGenerator:
         for field in model.fields:
             if field.measures is not None:
                 for measure in field.measures:
-                    measures.append(measure)
+                    measures.append(measure.model_dump())
         return measures
 
     def _create_explore(self, model):

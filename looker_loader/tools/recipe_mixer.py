@@ -161,6 +161,7 @@ class RecipeMixer:
         """
 
         def recurse_variants(mixture, dimensions = []):
+            
             dimensions.append(mixture)
             if mixture.variants:
                 for variant in mixture.variants:
@@ -171,6 +172,7 @@ class RecipeMixer:
             return dimensions
 
         def recurse_fields(mixture, dimensions = []):
+
             if mixture.fields:
                 for field in mixture.fields:
                     if field.variants:
