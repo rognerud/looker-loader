@@ -44,6 +44,7 @@ LookerType = Literal[
         "time",
         "yesno",
         "zipcode",
+        "timestamp",
     ]
 
 class LookerTimeMeasureType(str, ExtendedEnum):
@@ -156,6 +157,8 @@ class LookerBigQueryDataType(str, ExtendedEnum):
     ARRAY = "string"
     STRUCT = "string"
     JSON = "string"
+    RECORD = "string"
+    STR = "string"
 
 
 class LookerDateTimeTypes(str, ExtendedEnum):

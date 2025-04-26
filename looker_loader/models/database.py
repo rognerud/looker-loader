@@ -22,7 +22,10 @@ class DatabaseField(BaseModel):
     def adjust_type(cls, values):
         """Adjust the type of the field based on the db_type."""
         db_type = values.get("type")
-        values["type"] = LookerBigQueryDataType.get(db_type)
+        type = LookerBigQueryDataType.get(db_type.upper())
+        if type is None:
+            raise ValueError(f"Invalid type: {db_type}")
+        values["type"] = type
         return values
 
     @model_validator(mode="before")
@@ -70,13 +73,12 @@ class DatabaseField(BaseModel):
 
 
 class DatabaseTable(BaseModel):
+    name: str
     fields: List[DatabaseField]
     type: Optional[str] = None
     labels: Optional[Dict[str, str]] = None
     class Config:
         from_attributes = True
-
-
 
     @model_validator(mode="before")
     def push_order(cls, values):

@@ -4,10 +4,17 @@ recipes:
       group_label: Identifiers
     filters:
       regex_include: _id$|^pk_|_code$
+  - name: numbers
+    filters:
+      type: number
+    dimension:
+      group_label: Numbers
+      measures:
+        - type: sum
   - name: second_values
     filters:
       regex_include: _seconds$
-      type: int
+      type: number
     dimension:
       group_label: Duration
       variants:
@@ -17,3 +24,8 @@ recipes:
             - type: sum
       measures:
         - type: sum
+  - name: yesno
+    filters:
+      type: yesno
+    dimension:
+      group_label: Yes/No

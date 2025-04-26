@@ -32,7 +32,7 @@ class RecipeMixer:
         """
         Check if a filter is relevant for the given field_name, type, and tags.
         """
-        if filter.type and filter.type != type:
+        if filter.type and filter.type != field.type:
             return False
 
         if filter.regex_include and not re.search(filter.regex_include, field.name):
@@ -119,7 +119,7 @@ class RecipeMixer:
             logging.warning(f"Could not merge with model {model_b}")
             return model_b
 
-    def combine_dicts(self, dict1, dict2, conflict_resolution="first"):
+    def _combine_dicts(self, dict1, dict2, conflict_resolution="first"):
         """
         Combines two dictionaries, handling key conflicts based on the chosen strategy.
 
@@ -155,7 +155,7 @@ class RecipeMixer:
 
         return combined
 
-    def _flatten_mixture(self, mixture: LookerMixtureDimension) -> tuple:
+    def _flatten_mixture(self, mixture: LookerMixtureDimension) -> list[LookerMixtureDimension]:
         """
         Flatten the mixture into dimensions and measures.
         """
@@ -188,18 +188,18 @@ class RecipeMixer:
 
         return mixture
 
-    def apply_mixture(self, column: DatabaseField) -> tuple:
+    def apply_mixture(self, column: DatabaseField) -> list[LookerMixtureDimension]:
         """
         Create a mixture for a column and apply it.
         go through the recipes in the cookbook and apply the relevant ones to the column
+        return a list of created dimensions and measures
         """
 
         mixture = self.create_mixture(column)
+
         if mixture:
 
-            mixture_ingredients = mixture.model_dump()
-            column_ingredients = column.model_dump()
-            a = self.combine_dicts(column_ingredients, mixture_ingredients)
+            a = self._combine_dicts(column.model_dump(), mixture.model_dump())
 
             applied_mixture = LookerMixtureDimension(
                 **a
@@ -214,4 +214,4 @@ class RecipeMixer:
             applied_mixture = LookerMixtureDimension(
                 **column.model_dump()
             )
-            return applied_mixture, None
+            return applied_mixture

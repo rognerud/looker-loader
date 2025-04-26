@@ -33,6 +33,7 @@ class LookerViewElement(LookerBase):
         "time",
         "yesno",
         "zipcode",
+        "timestamp",
         None
     ]] = None
 
@@ -177,4 +178,5 @@ class LookerDim(BaseModel):
 
 class Looker(BaseModel):
     """Looker data for a model."""
+    name: str
     fields: Optional[List[LookerDim]] = None

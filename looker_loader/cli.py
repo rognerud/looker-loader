@@ -1,15 +1,18 @@
 import argparse
 import os
 import logging
-import yaml
+import lkml
 from rich.logging import RichHandler
 from looker_loader.utils import FileHandler
 from looker_loader.models.recipe import CookBook
 from looker_loader.models.config import Config
 from looker_loader.databases.bigquery.database import BigQueryDatabase
 from looker_loader.tools import recipe_mixer
+from looker_loader.models.looker import Looker, LookerDim
+from looker_loader.generator.lookml import LookmlGenerator
+
 logging.basicConfig(
-    level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
 
 
@@ -83,6 +86,7 @@ class Cli:
         if not os.path.exists(folder):
             raise FileNotFoundError(f"Folder {folder} does not exist")
 
+        logging.info(f"Loading Recipe from {folder}/loader_recipe.yml")
         data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
         self.recipe = CookBook(**data)
         self.mixer = recipe_mixer.RecipeMixer(self.recipe)
@@ -91,7 +95,6 @@ class Cli:
         """Run the CLI"""
         args = self._args_parser.parse_args()
 
-        logging.info("Loading Recipe")
         self._load_recipe()
 
         # logging.info(recipe)
@@ -116,23 +119,36 @@ class Cli:
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
 
-        def get_fields(thing, fields=[], measures=[]):
+        def get_fields(thing, fields=[]):
             """Get the fields from a schema"""
             for field in thing.fields:
-                base_dimension, dimensions, measures = self.mixer.apply_mixture(field)
-
-                if field.fields:
-                    base_dimension.fields = get_fields(field)
-                
-                fields.append(base_dimension)
-                if dimensions:
-                    fields.extend(dimensions)
-            return fields, measures
+                dimensions = self.mixer.apply_mixture(field)
+                if not isinstance(dimensions, list):
+                    parsed = LookerDim(**dimensions.model_dump())
+                    fields.append(parsed)
+                else:
+                    for dim in dimensions:
+                        parsed = LookerDim(**dim.model_dump())
+                        fields.append(parsed)
+            return fields
 
         for scheme in schemas:
-            fields, measures = get_fields(scheme)
-            logging.info(fields)
-            logging.info(measures)
+            fields = get_fields(scheme)
+            
+            model = Looker(**{
+                "name": scheme.name,
+                "fields": fields,
+            })
+
+            lookml = LookmlGenerator(cli_args=args)
+            r = lookml.generate(
+                model=model,
+            )
+            # view = self._write_lookml_file(
+            #     output_dir='output',
+            #     file_path='test.view.lkml',
+            #     contents=str(fields)#lkml.dump(fields),
+            # )
 
 def main():
     cli = Cli()
