@@ -39,6 +39,7 @@ class RecipeMixer:
             not filter.tags or any(tag in filter.tags for tag in field.tags),
             not filter.fields_include or field.name in filter.fields_include,
             not filter.fields_exclude or field.name not in filter.fields_exclude,
+            not filter.field_order or field.order in filter.field_order,
         ])
 
     def create_mixture(
@@ -152,11 +153,12 @@ class RecipeMixer:
         Flatten the mixture into dimensions and measures.
         """
 
-        def recurse_variants(mixture, dimensions = []):
-            
+        def recurse_variants(mixture, dimensions = None):
+            if dimensions is None:
+                dimensions = []
+
             if mixture.variants:
                 for variant in mixture.variants:
-                    variant.fields = []
                     dimensions.append(variant)
                     if variant.variants:
                         var_dimensions = recurse_variants(variant)
@@ -188,22 +190,17 @@ class RecipeMixer:
         """
         Recursively apply the mixture to the column and its subfields.
         """
+        d, v = self.apply_mixture(field) 
+
         if field.fields:
-            fields = []
+            d.fields = []
             for f in field.fields:
                 r = self._recursively_apply_mixture(f)
-                if isinstance(r, list):
-                    fields.extend(r)
-                elif isinstance(r, LookerMixtureDimension):
-                    fields.append(r)
+                if len(r) > 1:
+                    logging.info(r)
+                d.fields.extend(r)
 
-        d, v = self.apply_mixture(field)
-
-        if field.fields:
-            d.fields = fields
-
-        result = []
-        result.append(d)
+        result = [d]
         if isinstance(v, list):
             result.extend(v)
         elif isinstance(v, LookerMixtureDimension):

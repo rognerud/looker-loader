@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiohttp>=3.11.18",
+    "curio>=1.6",
     "google-cloud-bigquery>=3.30.0",
+    "httpx>=0.28.1",
     "lkml>=1.3.7",
     "pydantic>=2.10.6",
     "pytest>=8.3.5",

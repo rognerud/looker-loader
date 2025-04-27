@@ -17,7 +17,7 @@ class LookerViewElement(BaseModel):
     type: Optional[Literal[
         "bin",
         "date",
-        "date_time",
+        "datetime",
         "distance",
         "duration",
         "location",
@@ -119,7 +119,7 @@ class LookerDimension(LookerViewElement):
             dimension:
 
     """
-
+    primary_key: Optional[Union[bool, str]] = Field(default=None)
     convert_tz: Optional[Union[str, bool]] = Field(default=None)
     timeframes: Optional[List[str]] = Field(default=None)
     can_filter: Optional[Union[bool, str]] = Field(default=None)
@@ -155,7 +155,7 @@ class LookerDimension(LookerViewElement):
 class ValidatedLookerDimension(LookerDimension):
     """Looker data for a dimension with validation."""
 
-    @field_validator("convert_tz", "hidden", mode="after")
+    @field_validator("convert_tz", "hidden", "primary_key", mode="after")
     @classmethod
     def bool_to_yesno(cls, value):
         if isinstance(value, bool):
@@ -180,7 +180,7 @@ class ValidatedLookerDimensionGroup(LookerDimension):
             values["convert_tz"] = False
 
         elif values.get("type") in (
-            "date_time",
+            "datetime",
             "timestamp",
         ):
             # Convert to dimension group

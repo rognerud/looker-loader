@@ -38,7 +38,7 @@ LookerMeasureType = Literal[
 LookerType = Literal[
         "bin",
         "date",
-        "date_time",
+        "datetime",
         "distance",
         "duration",
         "location",

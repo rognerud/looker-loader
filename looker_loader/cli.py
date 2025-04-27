@@ -11,6 +11,7 @@ from looker_loader.tools import recipe_mixer
 from looker_loader.models.recipe import LookerMixture
 from looker_loader.generator.lookml import LookmlGenerator
 from looker_loader.tools.lkml_converter import convert_to_lkml
+import asyncio
 
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
@@ -103,50 +104,79 @@ class Cli:
         data = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
         self.config = Config(**data['config'])
 
-    def _load_schemas(self):
+    def _load_tables(self):
         """Load the schemas from the database"""
-        schemas = []
-        b = BigQueryDatabase()
+        process_list = []
 
         for d in self.config.bigquery:
             if not d.tables:
                 logging.info("Finding all tables")
-                tables = b.get_tables_in_dataset(d.project_id, d.dataset_id)
+                tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
             else:
                 tables = d.tables
-            
-            logging.info(f"Loading Schemas {tables} from '{d.project_id}.{d.dataset_id}'")
+
             for table in tables:
-                logging.info(f"Loading Schema for '{table}'")
-                schema = b.get_table_schema(d.project_id, d.dataset_id, table)
-                schemas.append(schema)
+                
+                process_list.append(
+                    {
+                        "project_id": d.project_id,
+                        "dataset_id": d.dataset_id,
+                        "table_id": table,
+                    }
+                )
+
+        self.tables = process_list
+
+    async def get_schemas(self):
+        """
+            asyncronously fetch the schemas of the tables
+            and parse them into a common database schema
+            and store them in self.schemas
+        """
+        self.database.init()
+        tasks = [
+            self.database._async_fetch_table_schema(
+            project_id=table.get("project_id"),
+            dataset_id=table.get("dataset_id"),
+            table_id=table.get("table_id"),
+            )
+            for table in self.tables
+            ]
+        
+        # Run all tasks concurrently and gather the results
+        results = await asyncio.gather(*tasks)
+
+        schemas = []
+        for json in results:
+            schemas.append(self.database._parse_schema(json))
 
         self.schemas = schemas
 
     def run(self):
         """Run the CLI"""
         args = self._args_parser.parse_args()
+        self.database = BigQueryDatabase()
+        self.lookml = LookmlGenerator(cli_args=args)
 
         self._load_recipe()
         self._load_config()
+        self._load_tables()
 
-        self._load_schemas()
-        lookml = LookmlGenerator(cli_args=args)
+        asyncio.run(self.get_schemas())
 
-        for scheme in self.schemas:
-            logging.info(f"Generating LookML for '{scheme.name}'")
+        for schema in self.schemas:
+            logging.info(f"Generating LookML for '{schema.name}'")
 
-            mixture = self.mixer.mixturize(scheme)
-            logging.info(f"Mixture length: {len(mixture.model_dump())}")
-            r = lookml.generate(
+            mixture = self.mixer.mixturize(schema)
+
+            views, explore = self.lookml.generate(
                 model=mixture,
             )
 
-            logging.info(f"r length: {len(r)}")
             self._write_lookml_file(
-                output_dir=f'output/{scheme.table_group}',
-                file_path=f'{scheme.name}.view.lkml',
-                contents=convert_to_lkml(r),
+                output_dir=f'output/{schema.table_group}',
+                file_path=f'{schema.name}.view.lkml',
+                contents=convert_to_lkml(views, explore),
             )
 
         logging.info("LookML files generated successfully")

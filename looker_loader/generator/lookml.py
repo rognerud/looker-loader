@@ -3,20 +3,12 @@
 import os
 from typing import Dict
 from looker_loader.models.looker import LookerView, ValidatedLookerDimension, LookerMeasure
-
+import logging
 
 
 class LookmlGenerator:
-    """Main LookML generator that coordinates dimension, view, and explore generation.
-    
-    This should be able to parse a list of models and generate LookML for each model.
-    It should also be able to handle the generation of multiple views and explores.
-    It should be able to handle nested views
-    and generate the appropriate LookML for each view and explore.
-    
-    Should it do the following?
-        parse the MixtureModels into LookerModels? (probably)
-
+    """
+        Main LookML generator that coordinates dimension, view, and explore generation.
     """
     def __init__(self, cli_args):
         self._cli_args = cli_args
@@ -26,6 +18,7 @@ class LookmlGenerator:
 
         if views is None:
             views = []
+
         view_dimensions = []
         view_measures = []
 
@@ -52,18 +45,50 @@ class LookmlGenerator:
 
         return views
 
+    def _generate_joins(self, model, joins = None, parent = None, depth = 0):
+        """Create a join for the model"""
+        if joins is None:
+            joins = []
+
+        if parent is not None:
+            parent_name = f"{parent}__{model.name}"
+        else:
+            parent_name = model.name
+
+        for field in model.fields:
+            if field.fields is not None:
+                self._generate_joins(field, joins, parent=parent_name, depth=depth + 1)
+
+        if parent is not None:
+            join = {
+                "name": parent_name,
+                "sql": f"LEFT JOIN UNNEST(${{{model.name}}}) AS {parent_name}",
+                "type": "left_outer",
+                "relationship": "one_to_many",
+                "required_joins": parent if depth > 1 else None,
+            }
+            joins.append(join)
+
+        return joins
+
     def _create_explore(self, model):
         """Create an explore for the model"""
-        explore = {
-            "name": model.name,
-            "joins": []
-        }
-        return explore
-    
+        joins = self._generate_joins(model)
+
+        if joins:
+            explore = {
+                "name": model.name,
+                "joins": joins,
+            }
+            return explore
 
     def generate(self, model) -> Dict:
         """Generate LookML for a model."""
         
         view_groups = self._generate_views(model)
 
-        return view_groups
+        explore = self._create_explore(model)
+        if explore:
+            logging.info(explore)
+
+        return view_groups, explore

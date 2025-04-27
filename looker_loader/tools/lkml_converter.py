@@ -49,16 +49,22 @@ def remove_empty_from_dict(data):
   else:
     return data
 
-def convert_to_lkml(data):
+def convert_to_lkml(views, explore):
     """Convert a dictionary to a LookML string."""
         
     python_r = []
-    for thing in data:
-        python_r.append(remove_empty_from_dict(thing.dict(exclude_none=True)))
+    for view in views:
+        python_r.append(remove_empty_from_dict(view.dict(exclude_none=True)))
 
-    dumpfile = {
+    if explore is not None:
+      dumpfile = {
+        "explores": remove_empty_from_dict(explore),
         "views": python_r,
-    }
+      }
+    else:
+      dumpfile = {
+          "views": python_r,
+      }
 
     lk = lkml.dump(dumpfile)
     indention_fixed = fix_multiline_indentation(lk)

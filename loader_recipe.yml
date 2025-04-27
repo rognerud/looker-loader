@@ -1,4 +1,10 @@
 recipes:
+  # - name: primary_key
+  #   filters:
+  #     field_order:
+  #       - 0
+  #   dimension:
+  #     primary_key: true
   - name: group_ids
     dimension:
       group_label: Identifiers
@@ -34,13 +40,13 @@ recipes:
       type: yesno
     dimension:
       group_label: Yes/No
-      html: >-
-        "
-          <a href='#drillmenu' target='_self'>
-            {% if value == 'Yes' %}
-            <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Yes </span>
-            {% else %}
-            <span style='color:#F9A4A9;text-align:center;'>✖</span><span> No </span>
-            {% endif %}
-          </a>
-        "
+      # html: >-
+      #   "
+      #     <a href='#drillmenu' target='_self'>
+      #       {% if value == 'Yes' %}
+      #       <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Yes </span>
+      #       {% else %}
+      #       <span style='color:#F9A4A9;text-align:center;'>✖</span><span> No </span>
+      #       {% endif %}
+      #     </a>
+      #   "

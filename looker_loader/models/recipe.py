@@ -79,7 +79,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
             if values.get("group_label") is None:
                 values["group_label"] = values.get("parent_group_label")
             if values.get("description") is None:
-                values["description"] = f"derived {values.get('type')} of {values.get("parent_name")} : {values.get("parent_description")}"
+                values["description"] = f"derived {values.get('suffix')} of {values.get("parent_name")} : {values.get("parent_description")}"
             values["type"] = values.get("parent_type", "string")
             values["sql"] = values.get("sql").replace("$x", f"${{{values.get('parent_name')}}}")
         return values
@@ -102,6 +102,7 @@ class RecipeFilter(BaseModel):
     tags: Optional[List[str]] = None
     fields_include: Optional[List[str]] = None
     fields_exclude: Optional[List[str]] = None
+    field_order: Optional[List[int]] = None
 
     @model_validator(mode="before")
     def check_at_least_one_field(cls, values):
