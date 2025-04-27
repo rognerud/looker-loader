@@ -35,7 +35,7 @@ class LookerViewElement(BaseModel):
     description: Optional[str] = None
     tags: Optional[List[str]] = None
 
-    value_format_name: Optional[LookerValueFormatName] = Field(default=None)
+    value_format_name: Optional[str] = Field(default=None)
     group_label: Optional[str] = None
 
     @field_validator("value_format_name", mode="before")
