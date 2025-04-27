@@ -1,24 +1,31 @@
 import lkml
 import logging
+import re
 
 def fix_multiline_indentation(text, indent_size=2):
     lines = text.split('\n')
     fixed_lines = []
-    inside_multiline = False
+    inside_multiline_string = False
     current_indent = ""
 
     for line in lines:
         stripped = line.lstrip()
+        leading_spaces = ' ' * (len(line) - len(stripped))
 
-        if not inside_multiline:
+        # If not currently inside a multiline string
+        if not inside_multiline_string:
             fixed_lines.append(line)
-            if stripped.endswith('html: "'):
-                inside_multiline = True
-                current_indent = ' ' * (len(line) - len(stripped) + indent_size)
+            # Check if a string starts but does not end on the same line
+            quote_starts = stripped.count('"') % 2 == 1
+            if quote_starts:
+                inside_multiline_string = True
+                current_indent = leading_spaces + (' ' * indent_size)
         else:
+            # Inside a multiline string
             fixed_lines.append(current_indent + stripped)
-            if stripped.endswith('" ;;'):
-                inside_multiline = False
+            # Check if string ends on this line
+            if stripped.count('"') % 2 == 1:
+                inside_multiline_string = False
 
     return '\n'.join(fixed_lines)
 

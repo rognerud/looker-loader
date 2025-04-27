@@ -135,14 +135,14 @@ class Cli:
 
         for scheme in self.schemas:
             logging.info(f"Generating LookML for '{scheme.name}'")
-            mixture = None
-            r = None
-            mixture = self.mixer.mixturize(scheme)
 
+            mixture = self.mixer.mixturize(scheme)
+            logging.info(f"Mixture length: {len(mixture.model_dump())}")
             r = lookml.generate(
                 model=mixture,
             )
 
+            logging.info(f"r length: {len(r)}")
             self._write_lookml_file(
                 output_dir=f'output/{scheme.table_group}',
                 file_path=f'{scheme.name}.view.lkml',

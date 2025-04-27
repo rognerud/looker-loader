@@ -21,9 +21,11 @@ class LookmlGenerator:
     def __init__(self, cli_args):
         self._cli_args = cli_args
     
-    def _generate_views(self, model, views = [], parent=None):
+    def _generate_views(self, model, views = None, parent = None):
         """Split up the model into views"""
-        
+
+        if views is None:
+            views = []
         view_dimensions = []
         view_measures = []
 
