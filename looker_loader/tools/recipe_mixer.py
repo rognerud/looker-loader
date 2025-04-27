@@ -163,8 +163,7 @@ class RecipeMixer:
                         dimensions.extend(var_dimensions)
             return dimensions
 
-        if mixture.variants:
-            mixture = recurse_variants(mixture)
+        mixture = recurse_variants(mixture)
 
         return mixture
 
@@ -218,13 +217,13 @@ class RecipeMixer:
         if not table.fields:
             raise Exception("No fields found in table")
 
-        fields = [
-            dimension
-            for field in table.fields
-            for dimension in (self._recursively_apply_mixture(field) 
-                if isinstance(self._recursively_apply_mixture(field), list) 
-                else [self._recursively_apply_mixture(field)])
-        ]
+        fields = []
+        for field in table.fields:
+            applied = self._recursively_apply_mixture(field)
+            if isinstance(applied, list):
+                fields.extend(applied)
+            else:
+                fields.append(applied)
 
         model = LookerMixture(**{
             "name": table.name,
