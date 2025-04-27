@@ -2,6 +2,7 @@ recipes:
   - name: group_ids
     dimension:
       group_label: Identifiers
+      value_format_name: id
       measures:
         - type: count_distinct
     filters:
@@ -15,7 +16,7 @@ recipes:
       measures:
         - type: sum
         - type: max
-  - name: second_values
+  - name: time_second_values
     filters:
       regex_include: _seconds$
       type: number
@@ -33,3 +34,13 @@ recipes:
       type: yesno
     dimension:
       group_label: Yes/No
+      html: >-
+        "
+          <a href='#drillmenu' target='_self'>
+            {% if value == 'Yes' %}
+            <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Ja </span>
+            {% else %}
+            <span style='color:#F9A4A9;text-align:center;'>✖</span><span> Nei </span>
+            {% endif %}
+          </a>
+        "

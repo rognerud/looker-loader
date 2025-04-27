@@ -42,6 +42,7 @@ class LookmlGenerator:
                     view_measures.append(measure.model_dump())
         view = LookerView(**{
             "name": view_name,
+            "sql_table_name": model.sql_table_name,
             "dimensions": view_dimensions,
             "measures": view_measures,
         })

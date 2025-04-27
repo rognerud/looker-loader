@@ -77,6 +77,11 @@ class DatabaseTable(BaseModel):
     fields: List[DatabaseField]
     type: Optional[str] = None
     labels: Optional[Dict[str, str]] = None
+    sql_table_name: Optional[str] = None
+
+    table_group: Optional[str] = None
+    table_project: Optional[str] = None
+
     class Config:
         from_attributes = True
 

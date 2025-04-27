@@ -1,12 +1,12 @@
 from looker_loader.enums import ExtendedEnum
 
-class BigqueryUrl(str, ExtendedEnum):
+class BigqueryUrl(ExtendedEnum):
     BIGQUERY = "https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
 
-class BigqueryMode(str, ExtendedEnum):
+class BigqueryMode(ExtendedEnum):
     REPEATED = "REPEATED"
 
-class BigqueryType(str, ExtendedEnum):
+class BigqueryType(ExtendedEnum):
     RECORD = "RECORD"
     ARRAY = "ARRAY"
     STRUCT = "STRUCT"

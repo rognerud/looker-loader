@@ -69,7 +69,7 @@ class RecipeMixer:
                 # if not combined_recipe.measures:
                 # combined_recipe.measures = []
                 # combined_recipe = self.merge_recipes(combined_recipe, recipe)
-                logging.info(f"Found relevant recipe: {recipe.name}")
+                logging.debug(f"Found relevant recipe: {recipe.name} for field {field.name}")
                 combined_recipe = recipe.dimension
         return combined_recipe
 
@@ -211,7 +211,7 @@ class RecipeMixer:
             return dimensions
     
         else:
-            logging.warning(f"No mixture found for column {column.name}")
+            logging.debug(f"No mixture found for column {column.name}")
             applied_mixture = LookerMixtureDimension(
                 **column.model_dump()
             )

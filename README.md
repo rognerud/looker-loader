@@ -1,13 +1,9 @@
-work in progress
+# work in progress
 
-- load recipes
-- load config
+## define rules for loading data and automatically apply it when loading the data in looker
 
-- *get schema
-- *get mixture
-- *make lookml
-
-- *lexicanum
-    - *understand locale
-    - *make llm folder things
-    - *make lexicanum structure and loading
+### intended features
+- write rules for how to format columns
+- write rules for generating derived columns and measures
+- refresh tables using cicd
+- leverage llm to translate names and descriptions using locales, in a editable way

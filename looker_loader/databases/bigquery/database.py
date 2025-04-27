@@ -38,8 +38,14 @@ class BigQueryDatabase:
 
     def _parse_schema(self) -> DatabaseTable:
         """Parse the schema of a BigQuery table into a Pydantic model."""
-        logging.info(self.json_schema.get("tableReference"))
-        self.parsed_schema = DatabaseTable(name=self.json_schema.get("tableReference").get("tableId"), fields=self.json_schema["schema"]["fields"])
+        table_ref = self.json_schema.get("tableReference")
+        self.parsed_schema = DatabaseTable(
+            name=table_ref.get("tableId"),
+            table_group=table_ref.get("datasetId"),
+            table_project=table_ref.get("projectId"),
+            fields=self.json_schema["schema"]["fields"],
+            sql_table_name=f'{table_ref.get("projectId")}.{table_ref.get("datasetId")}.{table_ref.get("tableId")}',
+            )
 
     def get_table_schema(self, project, dataset, table_id) -> DatabaseTable:
         """get the schema of a bigquery table and parse it into a common database schema."""

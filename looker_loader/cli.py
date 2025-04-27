@@ -10,30 +10,11 @@ from looker_loader.databases.bigquery.database import BigQueryDatabase
 from looker_loader.tools import recipe_mixer
 from looker_loader.models.recipe import LookerMixture
 from looker_loader.generator.lookml import LookmlGenerator
+from looker_loader.tools.lkml_converter import convert_to_lkml
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+    level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
-
-def remove_empty_from_dict(data):
-  """Recursively removes keys with None or empty list values from a dictionary.
-
-  Args:
-    data: The dictionary to clean.
-
-  Returns:
-    A new dictionary with empty values removed.
-  """
-  if isinstance(data, dict):
-    return {
-        k: remove_empty_from_dict(v)
-        for k, v in data.items()
-        if v is not None and (not isinstance(v, list) or len(v) > 0)
-    }
-  elif isinstance(data, list):
-    return [remove_empty_from_dict(item) for item in data if item is not None and (not isinstance(item, list) or len(item) > 0)]
-  else:
-    return data
 
 class Cli:
     HEADER = """
@@ -110,36 +91,48 @@ class Cli:
         self.recipe = CookBook(**data)
         self.mixer = recipe_mixer.RecipeMixer(self.recipe)
 
+    def _load_config(self, folder: str = None):
+        """Load the config from a yaml file"""
+        args = self._args_parser.parse_args()
+        if folder is None:
+            folder = args.config
+        if not os.path.exists(folder):
+            raise FileNotFoundError(f"Folder {folder} does not exist")
+
+        logging.info(f"Loading Config from {folder}/loader_config.yml")
+        data = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
+        self.config = Config(**data['config'])
+
+    def _load_schemas(self):
+        """Load the schemas from the database"""
+        schemas = []
+        b = BigQueryDatabase()
+
+        for d in self.config.bigquery:
+            if not d.tables:
+                logging.info("Finding all tables")
+                tables = b.get_tables_in_dataset(d.project_id, d.dataset_id)
+            else:
+                tables = d.tables
+            
+            logging.info(f"Loading Schemas {tables} from '{d.project_id}.{d.dataset_id}'")
+            for table in tables:
+                schema = b.get_table_schema(d.project_id, d.dataset_id, table)
+                schemas.append(schema)
+        
+        self.schemas = schemas
+
     def run(self):
         """Run the CLI"""
         args = self._args_parser.parse_args()
 
         self._load_recipe()
+        self._load_config()
 
-        # logging.info(recipe)
-
-        logging.info("Loading Config")
-        config = self._file_handler.read(f"{args.config}/loader_config.yml", file_type="yaml")
-        # config = Config(**config)
-        config = Config(**config['config'])
-
-        schemas = []
-        b = BigQueryDatabase()
-
-        for d in config.bigquery:
-            # logging.info(d)
-            if not d.tables:
-                # logging.info("Finding all tables")
-                tables = b.get_tables_in_dataset(d.project_id, d.dataset_id)
-            else:
-                tables = d.tables
-
-            for table in tables:
-                schema = b.get_table_schema(d.project_id, d.dataset_id, table)
-                schemas.append(schema)
+        self._load_schemas()
 
         def get_fields(thing, fields=[]):
-            """Get the fields from a schema"""
+            """ mix the fields of a recipe and return them"""
             for field in thing.fields:
                 dimensions = self.mixer.apply_mixture(field)
                 if not isinstance(dimensions, list):
@@ -151,11 +144,12 @@ class Cli:
                         fields.append(parsed)
             return fields
 
-        for scheme in schemas:
+        for scheme in self.schemas:
             fields = get_fields(scheme)
             
             model = LookerMixture(**{
                 "name": scheme.name,
+                "sql_table_name": scheme.sql_table_name,
                 "fields": fields,
             })
 
@@ -163,20 +157,14 @@ class Cli:
             r = lookml.generate(
                 model=model,
             )
-            python_r = []
-            for thing in r:
-                python_r.append(remove_empty_from_dict(thing.dict(exclude_none=True)))
 
-            dumpfile = {
-                "views": python_r,
-            }
-            from rich import print
-            print(dumpfile)
-            view = self._write_lookml_file(
-                output_dir='output',
-                file_path='test.view.lkml',
-                contents=lkml.dump(dumpfile),
+            self._write_lookml_file(
+                output_dir=f'output/{scheme.table_group}',
+                file_path=f'{scheme.name}.view.lkml',
+                contents=convert_to_lkml(r),
             )
+
+        logging.info("LookML files generated successfully")
 
 def main():
     cli = Cli()

@@ -46,6 +46,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
     fields: Optional[List['LookerMixtureDimension']] = None
     suffix: Optional[str] = None
     is_variant: Optional[bool] = None
+    sql_table_name: Optional[str] = None
 
     @model_validator(mode="before")
     def create(cls, values):
@@ -90,6 +91,7 @@ class LookerMixture(BaseModel):
     measures: Optional[List[LookerMixtureMeasure]] = None
     dimensions: Optional[List[LookerMixtureDimension]] = None
     sql: Optional[str] = None
+    sql_table_name: Optional[str] = None
 
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""

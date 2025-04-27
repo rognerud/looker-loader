@@ -82,7 +82,7 @@ class LookerValueFormatName(str, ExtendedEnum):
         return value in cls._value2member_map_
 
 
-class LookerTimeFrame(ExtendedEnum):
+class LookerTimeFrame(str, ExtendedEnum):
     DATE = "date"
     DAY_OF_MONTH = "day_of_month"
     DAY_OF_WEEK = "day_of_week"
@@ -180,7 +180,7 @@ class LookerScalarTypes(str, ExtendedEnum):
     STRING = "string"
 
 
-class LookerDateTimeframes(ExtendedEnum):
+class LookerDateTimeframes(str, ExtendedEnum):
     RAW = "raw"
     DATE = "date"
     DAY_OF_MONTH = "day_of_month"
@@ -196,7 +196,7 @@ class LookerDateTimeframes(ExtendedEnum):
     YEAR = "year"
 
 
-class LookerTimeTimeframes(ExtendedEnum):
+class LookerTimeTimeframes(str, ExtendedEnum):
     RAW = "raw"
     TIME = "time"
     TIME_OF_DAY = "time_of_day"

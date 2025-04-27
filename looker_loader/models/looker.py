@@ -11,14 +11,7 @@ from looker_loader.enums import (
 )
 
 #  metaclass
-class LookerBase(BaseModel):
-    label: Optional[str] = None
-    hidden: Optional[bool] = None
-    description: Optional[str] = None
-    tags: Optional[List[str]] = None
-
-#  metaclass
-class LookerViewElement(LookerBase):
+class LookerViewElement(BaseModel):
     """Looker data for a view element."""
     name: str = Field(default=None)
     type: Optional[Literal[
@@ -37,6 +30,10 @@ class LookerViewElement(LookerBase):
         "timestamp",
         None
     ]] = None
+    label: Optional[str] = None
+    hidden: Optional[bool] = None
+    description: Optional[str] = None
+    tags: Optional[List[str]] = None
 
     value_format_name: Optional[LookerValueFormatName] = Field(default=None)
     group_label: Optional[str] = None
@@ -132,7 +129,7 @@ class LookerDimension(LookerViewElement):
     case_sensitive: Optional[bool] = Field(default=None)
     allow_fill: Optional[bool] = Field(default=None)
     required_access_grants: Optional[List[str]] = Field(default=None)
-    html: Optional[bool] = Field(default=None)
+    html: Optional[str] = Field(default=None)
     sql: Optional[str] = None
     # fields: Optional[List['LookerDimension']] = None
 
@@ -157,6 +154,16 @@ class LookerDimension(LookerViewElement):
 
 class ValidatedLookerDimension(LookerDimension):
     """Looker data for a dimension with validation."""
+
+    @field_validator("convert_tz", "hidden", mode="after")
+    @classmethod
+    def bool_to_yesno(cls, value):
+        if isinstance(value, bool):
+            if value:
+                return "yes"
+            else:
+                return "no"
+        return value
 
 class ValidatedLookerDimensionGroup(LookerDimension):
     """Looker data for a dimension group with validation."""
@@ -183,8 +190,9 @@ class ValidatedLookerDimensionGroup(LookerDimension):
 
         return values
 
-    @field_validator("convert_tz", mode="after")
-    def handle_boolean_convert_tz(cls, value):
+    @field_validator("convert_tz", "hidden", mode="after")
+    @classmethod
+    def bool_to_yesno(cls, value):
         if isinstance(value, bool):
             if value:
                 return "yes"
@@ -192,12 +200,12 @@ class ValidatedLookerDimensionGroup(LookerDimension):
                 return "no"
         return value
 
-class LookerView(LookerBase):
+class LookerView(BaseModel):
     """Looker data for a view."""
 
     name: str
     label: Optional[str] = None
-    sql: Optional[str] = None
+    sql_table_name: Optional[str] = None
 
     dimensions: Optional[List[ValidatedLookerDimension]] = Field(default=None)
     dimension_groups: Optional[List[ValidatedLookerDimensionGroup]] = Field(default=None)
