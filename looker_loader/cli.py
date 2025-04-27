@@ -131,31 +131,12 @@ class Cli:
 
         self._load_schemas()
 
-        def get_fields(thing, fields=[]):
-            """ mix the fields of a recipe and return them"""
-            for field in thing.fields:
-                dimensions = self.mixer.apply_mixture(field)
-                if not isinstance(dimensions, list):
-                    parsed = dimensions#LookerDim(**dimensions.model_dump())
-                    fields.append(parsed)
-                else:
-                    for dim in dimensions:
-                        parsed = dim#LookerDim(**dim.model_dump())
-                        fields.append(parsed)
-            return fields
-
         for scheme in self.schemas:
-            fields = get_fields(scheme)
-            
-            model = LookerMixture(**{
-                "name": scheme.name,
-                "sql_table_name": scheme.sql_table_name,
-                "fields": fields,
-            })
+            mixture = self.mixer.mixturize(scheme)
 
             lookml = LookmlGenerator(cli_args=args)
             r = lookml.generate(
-                model=model,
+                model=mixture,
             )
 
             self._write_lookml_file(

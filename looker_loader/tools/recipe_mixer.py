@@ -1,6 +1,7 @@
 from looker_loader.models.database import DatabaseField, DatabaseTable
-from looker_loader.models.recipe import Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerRecipeDerivedDimension, LookerMixtureDimension
-from typing import List, Optional
+from looker_loader.models.recipe import LookerMixture, Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerRecipeDerivedDimension, LookerMixtureDimension
+
+from typing import List, Optional, Union
 import re
 import logging
 
@@ -31,25 +32,14 @@ class RecipeMixer:
         """
         Check if a filter is relevant for the given field_name, type, and tags.
         """
-        if filter.type and filter.type != field.type:
-            return False
-
-        if filter.regex_include and not re.search(filter.regex_include, field.name):
-            return False
-
-        if filter.regex_exclude and re.search(filter.regex_exclude, field.name):
-            return False
-
-        if filter.tags and not any(tag in filter.tags for tag in field.tags):
-            return False
-
-        if filter.fields_include and field.name not in filter.fields_include:
-            return False
-
-        if filter.fields_exclude and field.name in filter.fields_exclude:
-            return False
-
-        return True
+        return all([
+            not filter.type or filter.type == field.type,
+            not filter.regex_include or re.search(filter.regex_include, field.name),
+            not filter.regex_exclude or not re.search(filter.regex_exclude, field.name),
+            not filter.tags or any(tag in filter.tags for tag in field.tags),
+            not filter.fields_include or field.name in filter.fields_include,
+            not filter.fields_exclude or field.name not in filter.fields_exclude,
+        ])
 
     def create_mixture(
         self, field: DatabaseField
@@ -74,6 +64,9 @@ class RecipeMixer:
         return combined_recipe
 
     def _merge_and_replace_empty(self, d1, d2):
+        """
+        Merge two dictionaries, replacing empty values in d1 with values from d2.
+        """
         merged = {}
 
         def is_empty(value):
@@ -161,58 +154,82 @@ class RecipeMixer:
 
         def recurse_variants(mixture, dimensions = []):
             
-            dimensions.append(mixture)
             if mixture.variants:
                 for variant in mixture.variants:
+                    variant.fields = []
                     dimensions.append(variant)
                     if variant.variants:
                         var_dimensions = recurse_variants(variant)
                         dimensions.extend(var_dimensions)
             return dimensions
 
-        def recurse_fields(mixture, dimensions = []):
-
-            if mixture.fields:
-                for field in mixture.fields:
-                    if field.variants:
-                        var_dimensions = recurse_variants(field)
-                        dimensions.extend(var_dimensions)
-                    if field.fields:
-                        field_dimensions = recurse_fields(field)
-                        dimensions.extend(field_dimensions)
-            mixture.fields = dimensions
-
-        if mixture.fields:
-            mixture = recurse_fields(mixture)        
         if mixture.variants:
             mixture = recurse_variants(mixture)
 
         return mixture
 
-    def apply_mixture(self, column: DatabaseField) -> list[LookerMixtureDimension]:
-        """
-        Create a mixture for a column and apply it.
-        go through the recipes in the cookbook and apply the relevant ones to the column
-        return a list of created dimensions and measures
-        """
-
+    def apply_mixture(self, column: DatabaseField) -> tuple[LookerMixtureDimension, Optional[List[LookerMixtureDimension]]]:
+        """Create and apply a mixture to a column, returning the applied mixture and its variants."""
         mixture = self.create_mixture(column)
 
-        if mixture:
-
-            a = self._combine_dicts(column.model_dump(), mixture.model_dump())
-
-            applied_mixture = LookerMixtureDimension(
-                **a
-            )
-
-            dimensions = self._flatten_mixture(applied_mixture)
-
-            return dimensions
-    
-        else:
+        if not mixture:
             logging.debug(f"No mixture found for column {column.name}")
-            applied_mixture = LookerMixtureDimension(
-                **column.model_dump()
-            )
-            return applied_mixture
+            applied_mixture = LookerMixtureDimension(**column.model_dump())
+            return applied_mixture, None
+
+        combined_data = self._combine_dicts(column.model_dump(), mixture.model_dump())
+        applied_mixture = LookerMixtureDimension(**combined_data)
+        variants = self._flatten_mixture(applied_mixture)
+
+        return applied_mixture, variants
+
+    def _recursively_apply_mixture(
+        self, field: DatabaseField
+    ) -> list[LookerMixtureDimension]:
+        """
+        Recursively apply the mixture to the column and its subfields.
+        """
+        if field.fields:
+            fields = []
+            for f in field.fields:
+                r = self._recursively_apply_mixture(f)
+                if isinstance(r, list):
+                    fields.extend(r)
+                elif isinstance(r, LookerMixtureDimension):
+                    fields.append(r)
+
+        d, v = self.apply_mixture(field)
+
+        if field.fields:
+            d.fields = fields
+
+        result = []
+        result.append(d)
+        if isinstance(v, list):
+            result.extend(v)
+        elif isinstance(v, LookerMixtureDimension):
+            result.append(v)
+        return result
+
+    def mixturize(self, table: DatabaseTable) -> DatabaseTable:
+        """
+        Search for and apply recipes to the table.
+        """
+        if not table.fields:
+            raise Exception("No fields found in table")
+
+        fields = [
+            dimension
+            for field in table.fields
+            for dimension in (self._recursively_apply_mixture(field) 
+                if isinstance(self._recursively_apply_mixture(field), list) 
+                else [self._recursively_apply_mixture(field)])
+        ]
+
+        model = LookerMixture(**{
+            "name": table.name,
+            "sql_table_name": table.sql_table_name,
+            "fields": fields,
+        })
+
+        return model
