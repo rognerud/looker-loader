@@ -38,9 +38,9 @@ recipes:
         "
           <a href='#drillmenu' target='_self'>
             {% if value == 'Yes' %}
-            <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Ja </span>
+            <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Yes </span>
             {% else %}
-            <span style='color:#F9A4A9;text-align:center;'>✖</span><span> Nei </span>
+            <span style='color:#F9A4A9;text-align:center;'>✖</span><span> No </span>
             {% endif %}
           </a>
         "

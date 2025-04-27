@@ -117,9 +117,10 @@ class Cli:
             
             logging.info(f"Loading Schemas {tables} from '{d.project_id}.{d.dataset_id}'")
             for table in tables:
+                logging.info(f"Loading Schema for '{table}'")
                 schema = b.get_table_schema(d.project_id, d.dataset_id, table)
                 schemas.append(schema)
-        
+
         self.schemas = schemas
 
     def run(self):
@@ -130,11 +131,14 @@ class Cli:
         self._load_config()
 
         self._load_schemas()
+        lookml = LookmlGenerator(cli_args=args)
 
         for scheme in self.schemas:
+            logging.info(f"Generating LookML for '{scheme.name}'")
+            mixture = None
+            r = None
             mixture = self.mixer.mixturize(scheme)
 
-            lookml = LookmlGenerator(cli_args=args)
             r = lookml.generate(
                 model=mixture,
             )
