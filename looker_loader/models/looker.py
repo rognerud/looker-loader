@@ -1,6 +1,7 @@
 from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 import warnings
+from looker_loader.enums import LookerType, LookerDateTimeframes, LookerTimeTimeframes
 
 from looker_loader.enums import (
     LookerType,
@@ -122,8 +123,8 @@ class LookerDimension(LookerViewElement):
 
     """
 
-    convert_tz: Optional[bool] = Field(default=None)
-    timeframes: Optional[List[LookerTimeFrame]] = Field(default=None)
+    convert_tz: Optional[Union[str, bool]] = Field(default=None)
+    timeframes: Optional[List[str]] = Field(default=None)
     can_filter: Optional[Union[bool, str]] = Field(default=None)
     group_item_label: Optional[str] = Field(default=None)
     order_by_field: Optional[str] = Field(default=None)
@@ -133,50 +134,92 @@ class LookerDimension(LookerViewElement):
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[bool] = Field(default=None)
     sql: Optional[str] = None
-    fields: Optional[List['LookerDimension']] = None
+    # fields: Optional[List['LookerDimension']] = None
 
-    @field_validator("timeframes", mode="before")
-    def check_enums(cls, values):
-        if values is not None:
-            if isinstance(values, list[str]):
-                timeframes = values
-                valid_timeframes = [
-                    tf for tf in timeframes if isinstance(tf, LookerTimeFrame)
-                ]
-                if len(valid_timeframes) < len(timeframes):
-                    invalid_timeframes = set(timeframes) - set(valid_timeframes)
-                    warnings.warn(
-                        f"Invalid timeframes: {invalid_timeframes}. "
-                    )
-                    values["timeframes"] = valid_timeframes
+
+    # @field_validator("timeframes", mode="before")
+    # def check_enums(cls, values):
+    #     if values is not None:
+    #         if isinstance(values, list[str]):
+    #             timeframes = values
+    #             valid_timeframes = [
+    #                 tf for tf in timeframes if isinstance(tf, LookerTimeFrame)
+    #             ]
+    #             if len(valid_timeframes) < len(timeframes):
+    #                 invalid_timeframes = set(timeframes) - set(valid_timeframes)
+    #                 warnings.warn(
+    #                     f"Invalid timeframes: {invalid_timeframes}. "
+    #                 )
+    #                 values["timeframes"] = valid_timeframes
+
+    #     return values
+
+
+class ValidatedLookerDimension(LookerDimension):
+    """Looker data for a dimension with validation."""
+
+class ValidatedLookerDimensionGroup(LookerDimension):
+    """Looker data for a dimension group with validation."""
+
+    @model_validator(mode="before")
+    def convert_to_dimension_group(cls, values):
+        if values.get("type") in (
+            "date",
+            "time"
+        ):
+            # Convert to dimension group
+            values["type"] = "time"
+            values["timeframes"] = LookerDateTimeframes.str_values()
+            values["convert_tz"] = False
+
+        elif values.get("type") in (
+            "date_time",
+            "timestamp",
+        ):
+            # Convert to dimension group
+            values["type"] = "time"
+            values["timeframes"] = LookerTimeTimeframes.str_values()
+            values["convert_tz"] = True
 
         return values
 
-class LookerMea(BaseModel):
-    """Looker data for a measure."""
+    @field_validator("convert_tz", mode="after")
+    def handle_boolean_convert_tz(cls, value):
+        if isinstance(value, bool):
+            if value:
+                return "yes"
+            else:
+                return "no"
+        return value
+
+class LookerView(LookerBase):
+    """Looker data for a view."""
 
     name: str
-    type: LookerMeasureType
-    sql: str
-    group_label: Optional[str]
-    description: Optional[str]
-    tags: Optional[List[str]]
-    hidden: Optional[bool]
+    label: Optional[str] = None
+    sql: Optional[str] = None
 
-class LookerDim(BaseModel):
-    """Looker data for a dimension."""
+    dimensions: Optional[List[ValidatedLookerDimension]] = Field(default=None)
+    dimension_groups: Optional[List[ValidatedLookerDimensionGroup]] = Field(default=None)
+    measures: Optional[List[LookerMeasure]] = Field(default=None)
 
-    name: str
-    type: LookerType
-    sql: str
-    group_label: Optional[str]
-    description: Optional[str]
-    tags: Optional[List[str]]
-    hidden: Optional[bool]
-    measures: Optional[List[LookerMea]] = None
-    fields: Optional[List["LookerDim"]] = None
+    @model_validator(mode="before")
+    def handle_time_and_dates(cls, values):
+        """Convert time and date dimensions to dimension groups."""
+        if values.get("dimensions"):
+            dimensions = []
+            dimensions_groups = []
 
-class Looker(BaseModel):
-    """Looker data for a model."""
-    name: str
-    fields: Optional[List[LookerDim]] = None
+            for dimension in values["dimensions"]:
+                if dimension.get("type") in (
+                    "date",
+                    "datetime",
+                    "timestamp",
+                    "time",
+                ):
+                    dimensions_groups.append(dimension)
+                else:
+                    dimensions.append(dimension)
+            values["dimensions"] = dimensions
+            values["dimension_groups"] = dimensions_groups
+        return values

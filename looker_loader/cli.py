@@ -8,7 +8,7 @@ from looker_loader.models.recipe import CookBook
 from looker_loader.models.config import Config
 from looker_loader.databases.bigquery.database import BigQueryDatabase
 from looker_loader.tools import recipe_mixer
-from looker_loader.models.looker import Looker, LookerDim
+from looker_loader.models.recipe import LookerMixture
 from looker_loader.generator.lookml import LookmlGenerator
 
 logging.basicConfig(
@@ -143,18 +143,18 @@ class Cli:
             for field in thing.fields:
                 dimensions = self.mixer.apply_mixture(field)
                 if not isinstance(dimensions, list):
-                    parsed = LookerDim(**dimensions.model_dump())
+                    parsed = dimensions#LookerDim(**dimensions.model_dump())
                     fields.append(parsed)
                 else:
                     for dim in dimensions:
-                        parsed = LookerDim(**dim.model_dump())
+                        parsed = dim#LookerDim(**dim.model_dump())
                         fields.append(parsed)
             return fields
 
         for scheme in schemas:
             fields = get_fields(scheme)
             
-            model = Looker(**{
+            model = LookerMixture(**{
                 "name": scheme.name,
                 "fields": fields,
             })
@@ -163,22 +163,20 @@ class Cli:
             r = lookml.generate(
                 model=model,
             )
-
-            flat_r = []
+            python_r = []
             for thing in r:
-                from rich import print
+                python_r.append(remove_empty_from_dict(thing.dict(exclude_none=True)))
 
-
-                t = remove_empty_from_dict(thing)
-
-                # if t.get("name") == "obt_penetrace_tv2__weekly_data__answer_value_response_information":
-                print(t)
-
-                view = self._write_lookml_file(
-                    output_dir='output',
-                    file_path='test.view.lkml',
-                    contents=lkml.dump(remove_empty_from_dict(t)),
-                )
+            dumpfile = {
+                "views": python_r,
+            }
+            from rich import print
+            print(dumpfile)
+            view = self._write_lookml_file(
+                output_dir='output',
+                file_path='test.view.lkml',
+                contents=lkml.dump(dumpfile),
+            )
 
 def main():
     cli = Cli()

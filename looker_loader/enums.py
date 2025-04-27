@@ -6,6 +6,10 @@ class ExtendedEnum(Enum):
         return list(map(lambda c: c.value, cls))
 
     @classmethod
+    def str_values(cls)  -> list[str]:
+        return [c.value for c in cls]
+
+    @classmethod
     def get(cls, key):
         return member.value if (member := cls.__members__.get(key)) else None
 
@@ -78,7 +82,7 @@ class LookerValueFormatName(str, ExtendedEnum):
         return value in cls._value2member_map_
 
 
-class LookerTimeFrame(str, ExtendedEnum):
+class LookerTimeFrame(ExtendedEnum):
     DATE = "date"
     DAY_OF_MONTH = "day_of_month"
     DAY_OF_WEEK = "day_of_week"
@@ -176,7 +180,7 @@ class LookerScalarTypes(str, ExtendedEnum):
     STRING = "string"
 
 
-class LookerDateTimeframes(str, ExtendedEnum):
+class LookerDateTimeframes(ExtendedEnum):
     RAW = "raw"
     DATE = "date"
     DAY_OF_MONTH = "day_of_month"
@@ -192,7 +196,7 @@ class LookerDateTimeframes(str, ExtendedEnum):
     YEAR = "year"
 
 
-class LookerTimeTimeframes(str, ExtendedEnum):
+class LookerTimeTimeframes(ExtendedEnum):
     RAW = "raw"
     TIME = "time"
     TIME_OF_DAY = "time_of_day"

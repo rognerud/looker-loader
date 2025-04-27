@@ -83,6 +83,14 @@ class LookerMixtureDimension(LookerRecipeDimension):
             values["sql"] = values.get("sql").replace("$x", f"${{{values.get('parent_name')}}}")
         return values
 
+class LookerMixture(BaseModel):
+    """A mixture of dimensions and measures in Looker"""
+    name: str
+    fields: Optional[List[LookerMixtureDimension]] = None
+    measures: Optional[List[LookerMixtureMeasure]] = None
+    dimensions: Optional[List[LookerMixtureDimension]] = None
+    sql: Optional[str] = None
+
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""
 
