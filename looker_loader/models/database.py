@@ -33,12 +33,13 @@ class DatabaseField(BaseModel):
 
     @model_validator(mode="before")
     def push_down_copy_for_repeated(cls, values):
-        """ push down copy for repeated fields """
+        """ push down copy for repeated fields that are arrays """
         if values.get("mode") == "REPEATED" and values.get("fields") is None:
             copy = values.copy()
             copy["mode"] = "NULLABLE"
             copy["parent_db_type"] = "ARRAY"
             copy["parent_mode"] = "REPEATED"
+            copy["description"] = f"A single value from {values.get("description", "")}"
             values["fields"] = [copy]
         return values
 
