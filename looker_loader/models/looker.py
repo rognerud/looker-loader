@@ -75,6 +75,7 @@ class LookerMeasure(LookerViewElement):
     percentile: Optional[int] = None  # For percentile measures
     required_access_grants: Optional[List[str]] = Field(default=None)
     filters: Optional[List[LookerMeasureFilter]] = None
+    sql: Optional[str] = None  # SQL expression for the measure
 
     @model_validator(mode="before")
     def validate_measure_attributes(cls, values):

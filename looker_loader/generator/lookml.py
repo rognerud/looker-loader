@@ -62,7 +62,7 @@ class LookmlGenerator:
         if parent is not None:
             join = {
                 "name": parent_name,
-                "sql": f"LEFT JOIN UNNEST(${{{model.name}}}) AS {parent_name}",
+                "sql": f"LEFT JOIN UNNEST(${{{parent}.{model.name}}}) AS {parent_name}",
                 "type": "left_outer",
                 "relationship": "one_to_many",
                 "required_joins": parent if depth > 1 else None,
@@ -88,7 +88,5 @@ class LookmlGenerator:
         view_groups = self._generate_views(model)
 
         explore = self._create_explore(model)
-        if explore:
-            logging.info(explore)
 
         return view_groups, explore

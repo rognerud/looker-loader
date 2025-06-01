@@ -34,6 +34,7 @@ class RecipeMixer:
         """
         Check if a filter is relevant for the given field_name, type, and tags.
         """
+
         return all([
             not filter.type or filter.type == field.type,
             not filter.regex_include or re.search(filter.regex_include, field.name),
@@ -64,54 +65,6 @@ class RecipeMixer:
                 *relevant_recipes, conflict_resolution="last"
             )
             return output
-
-    def _merge_and_replace_empty(self, d1, d2):
-        """
-        Merge two dictionaries, replacing empty values in d1 with values from d2.
-        """
-        merged = {}
-
-        def is_empty(value):
-            # Define what you consider as "empty"
-            return value in [None, "", [], {}, set(), tuple()]
-
-        for key in set(d1) | set(d2):
-            value1 = d1.get(key)
-            value2 = d2.get(key)
-
-            if isinstance(value1, dict) and isinstance(value2, dict):
-                merged[key] = self._merge_and_replace_empty(value1, value2)
-            elif isinstance(value1, dict):
-                merged[key] = self._merge_and_replace_empty(value1, {})
-            elif isinstance(value2, dict):
-                merged[key] = self._merge_and_replace_empty({}, value2)
-            elif is_empty(value2):
-                merged[key] = value1
-            else:
-                merged[key] = value2
-
-        # Remove keys with None values
-        merged = {k: v for k, v in merged.items() if v is not None}
-
-        return merged
-
-    def _merge_models(
-        self, model_a: DatabaseField, model_b: DatabaseField
-    ) -> DatabaseField:
-        """Merge the data, with model_b's fields taking precedence"""
-        if hasattr(model_b, "meta"):  # and hasattr(model_b.meta.looker,"dimension"):
-            merged_meta_data = self._merge_and_replace_empty(
-                model_a.model_dump(), model_b.meta.model_dump()
-            )
-            logging.warning(f"Merged meta model {merged_meta_data}")
-            merged_model = DatabaseField(**merged_meta_data)
-            logging.warning(f"Parsed meta model {merged_model}")
-            model_b.meta = merged_model
-            logging.warning(f"Merged with model {model_b}")
-            return model_b
-        else:
-            logging.warning(f"Could not merge with model {model_b}")
-            return model_b
 
     def _combine_dicts(self, *args, conflict_resolution="first"):
         """
@@ -158,9 +111,9 @@ class RecipeMixer:
         for current_dict in dicts:
             for key, value in current_dict.items():
                 if key in combined:
-                    if combined[key] is None:
+                    if current_dict[key] is None:
                         pass
-                    if isinstance(combined[key], list):
+                    elif isinstance(combined[key], list):
                         if isinstance(value, list):
                             if len(value) > 0:
                                 extend_unique_dicts_tuple(combined[key], value)
@@ -212,11 +165,9 @@ class RecipeMixer:
             applied_mixture = LookerMixtureDimension(**column.model_dump())
             return applied_mixture, None
 
-        combined_data = self._combine_dicts(column.model_dump(), mixture, conflict_resolution="first")
-        logging.info(column)
-        logging.info(remove_nones(mixture))
-        logging.info(remove_nones(combined_data))
-        applied_mixture = LookerMixtureDimension(**combined_data)
+        applied_mixture = LookerMixtureDimension(**
+            self._combine_dicts(column.model_dump(), mixture, conflict_resolution="first")
+        )
 
         variants = self._flatten_mixture(applied_mixture)
 

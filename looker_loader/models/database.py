@@ -62,10 +62,10 @@ class DatabaseField(BaseModel):
     def create_sql(cls, values):
         """Create SQL field from name and parent_name"""
         base = "${TABLE}"
-        if values.parent_mode == "REPEATED":
-            values.sql = values.name
-        else:
-            values.sql = f"{base}.{values.name}"
+        # if values.parent_mode == "REPEATED":
+            # values.sql = values.name
+        # else:
+        values.sql = f"{base}.{values.name}"
         return values
 
     class Config:

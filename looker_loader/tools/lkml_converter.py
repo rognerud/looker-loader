@@ -58,7 +58,7 @@ def convert_to_lkml(views, explore):
 
     if explore is not None:
       dumpfile = {
-        "explores": remove_empty_from_dict(explore),
+        "explore": remove_empty_from_dict(explore),
         "views": python_r,
       }
     else:
