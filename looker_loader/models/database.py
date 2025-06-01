@@ -9,12 +9,14 @@ from looker_loader.enums import (
 class DatabaseField(BaseModel):
     name: str
     type: LookerType
+    db_type: str
     order: int
     mode: Optional[str] = None
     description: Optional[str] = None
     parent_name: Optional[str] = None
     parent_mode: Optional[str] = None
     parent_type: Optional[str] = None
+    parent_db_type: Optional[str] = None
     sql: Optional[str] = None
     fields: Optional[List["DatabaseField"]] = None
 
@@ -26,6 +28,18 @@ class DatabaseField(BaseModel):
         if type is None:
             raise ValueError(f"Invalid type: {db_type}")
         values["type"] = type
+        values["db_type"] = db_type.upper()
+        return values
+
+    @model_validator(mode="before")
+    def push_down_copy_for_repeated(cls, values):
+        """ push down copy for repeated fields """
+        if values.get("mode") == "REPEATED" and values.get("fields") is None:
+            copy = values.copy()
+            copy["mode"] = "NULLABLE"
+            copy["parent_db_type"] = "ARRAY"
+            copy["parent_mode"] = "REPEATED"
+            values["fields"] = [copy]
         return values
 
     @model_validator(mode="before")
@@ -36,6 +50,7 @@ class DatabaseField(BaseModel):
             for child in values.get("fields"):
                 child["parent_mode"] = values.get("mode")
                 child["parent_type"] = values.get("type")
+                child["parent_db_type"] = values.get("db_type")
                 if hasattr(values, "parent_name"):
                     child["parent_name"] = f"{values.get('parent_name')}.{values.get('name')}"
                 else:
@@ -62,10 +77,10 @@ class DatabaseField(BaseModel):
     def create_sql(cls, values):
         """Create SQL field from name and parent_name"""
         base = "${TABLE}"
-        # if values.parent_mode == "REPEATED":
-            # values.sql = values.name
-        # else:
-        values.sql = f"{base}.{values.name}"
+        if values.parent_mode == "REPEATED" and values.parent_db_type == "ARRAY":
+            values.sql = base
+        else:
+            values.sql = f"{base}.{values.name}"
         return values
 
     class Config:
