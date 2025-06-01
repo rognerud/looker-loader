@@ -5,26 +5,28 @@ from typing import List, Optional, Union
 import re
 import logging
 
+def extend_unique_dicts_tuple(existing_list, new_items):
+    """Extends a list with only unique dictionaries (represented as tuples of sorted items)."""
+    existing_set = {tuple(sorted(d.items())) for d in existing_list}  # Convert existing dicts to tuples
+    for item in new_items:
+        tuple_item = tuple(sorted(item.items()))
+        if tuple_item not in existing_set:
+            existing_list.append(item)
+            existing_set.add(tuple_item)
+
+
+def remove_nones(data):
+    """Recursively removes None values from dictionaries and lists."""
+    if isinstance(data, dict):
+        return {k: remove_nones(v) for k, v in data.items() if v is not None}
+    elif isinstance(data, list):
+        return [remove_nones(item) for item in data if item is not None]
+    else:
+        return data  # Return non-None values as is
+
 class RecipeMixer:
     def __init__(self, cookbook: CookBook):
         self.cookbook = cookbook
-
-    def merge_recipes(self, base: Recipe, override: Recipe) -> Recipe:
-        """
-        Merge two Recipe objects, with override having priority over base.
-        """
-        if override.name and base.name:
-            base.name = f"{base.name} - {override.name}"
-
-        # if override.actions:
-        #     base.actions = base.actions or []
-        #     base.actions.extend(override.actions)
-
-        # if override.measures:
-        #     base.measures = base.measures or []
-        #     base.measures.extend(override.measures)
-
-        return base
 
     def is_filter_relevant(
         self, filter: RecipeFilter, field: DatabaseField
@@ -48,21 +50,20 @@ class RecipeMixer:
         """
         Combine relevant recipes from cookbook based on field_name, type, and tags.
         """
-        combined_recipe = None
-        # combined_recipe = Recipe()
         if not self.cookbook.recipes:
             raise Exception("No recipes found in cookbook")
 
-        for recipe in self.cookbook.recipes:
-            if self.is_filter_relevant(recipe.filters, field):
-                # if not combined_recipe.actions:
-                # combined_recipe.actions = []
-                # if not combined_recipe.measures:
-                # combined_recipe.measures = []
-                # combined_recipe = self.merge_recipes(combined_recipe, recipe)
-                logging.debug(f"Found relevant recipe: {recipe.name} for field {field.name}")
-                combined_recipe = recipe.dimension
-        return combined_recipe
+        relevant_recipes = [
+            recipe.dimension.model_dump() for recipe in self.cookbook.recipes
+            if self.is_filter_relevant(recipe.filters, field)
+        ]
+        if not relevant_recipes:
+            return None
+        else:
+            output = self._combine_dicts(
+                *relevant_recipes, conflict_resolution="last"
+            )
+            return output
 
     def _merge_and_replace_empty(self, d1, d2):
         """
@@ -112,39 +113,72 @@ class RecipeMixer:
             logging.warning(f"Could not merge with model {model_b}")
             return model_b
 
-    def _combine_dicts(self, dict1, dict2, conflict_resolution="first"):
+    def _combine_dicts(self, *args, conflict_resolution="first"):
         """
-        Combines two dictionaries, handling key conflicts based on the chosen strategy.
-
+        Combines an arbitrary number of dictionaries, handling key conflicts
+        based on the chosen strategy and the order of the dictionaries.
         Args:
-            dict1: The first dictionary.
-            dict2: The second dictionary.
-            conflict_resolution:  How to handle keys present in both dictionaries:
-            - "first": Keep the value from dict1.
-            - "second" (default): Keep the value from dict2.
-            - "merge":  If values are lists, merge them.  Otherwise, raise ValueError.
-
+            *dicts: An arbitrary number of dictionaries to combine.
+            conflict_resolution: How to handle keys present in multiple dictionaries:
+                - "first" (default): Keep the value from the first dictionary
+                                    where the key appears.
+                - "last": Keep the value from the last dictionary where the key appears.
+                - "append": If values are lists, append the new value to the existing list.
+                            If the existing value is not a list, it will be converted to a list
+                            containing the original value before appending the new value.
+                            If the new value is a list, it will be extended to the original list.
+                - "custom": Uses a custom function to resolve conflicts. The function
+                            should accept the key and a list of values (in order of
+                            appearance in the dictionaries) and return the resolved value.
         Returns:
             A new dictionary containing the combined keys and values.
         """
+        logging.debug("----- Combining dictionaries -----")
+        if len(args) == 1 and isinstance(args[0], list):
+            # If the only argument is a list, treat it as a list of dictionaries
+            logging.debug("Received a list of dictionaries as the second argument.")
+            predicts = args[0]
+        else:
+            logging.debug("Received multiple dictionaries as arguments.")
+            # Otherwise, treat all arguments as individual dictionaries
+            predicts = args[0:]
 
-        combined = dict1.copy()  # Start with a copy of dict1
+        if not predicts:
+            logging.debug("No dictionaries provided to combine.")
+            return {}  # Handles the case where an empty list was passed in.
 
-        for key, value in dict2.items():
-            if key in combined:
-                if conflict_resolution == "first":
-                    pass  # Keep the value from dict1 (already in combined)
-                elif conflict_resolution == "second":
-                    combined[key] = value # Override with value from dict2
-                elif conflict_resolution == "merge":
-                    if isinstance(combined[key], list) and isinstance(value, list):
-                        combined[key] = combined[key] + value  # Merge the lists
+        if len(predicts) == 1:
+            logging.debug("Only one dictionary provided, returning it as is.")
+            # If only one dictionary is provided, return it as is, but not as a tuple.
+            return predicts[0]
+
+        combined = predicts[0]  # Start with the first dictionary
+        dicts = predicts[1:]  # Remaining dictionaries to process
+
+        for current_dict in dicts:
+            for key, value in current_dict.items():
+                if key in combined:
+                    if combined[key] is None:
+                        pass
+                    if isinstance(combined[key], list):
+                        if isinstance(value, list):
+                            if len(value) > 0:
+                                extend_unique_dicts_tuple(combined[key], value)
+                        elif isinstance(value, dict):
+                            tuple_value = tuple(sorted(value.items()))
+                            existing_set = {tuple(sorted(d.items())) for d in combined[key]}
+                            if tuple_value not in existing_set:
+                                combined[key].append(value)
+                        else:
+                            if value not in combined[key] and value is not None:
+                                combined[key].append(value)
                     else:
-                        raise ValueError(f"Cannot merge non-list values for key '{key}'.")
+                        if conflict_resolution == "first":
+                            pass  # Keep the first value (already in `combined`)
+                        elif conflict_resolution == "last":
+                            combined[key] = value  # Override with the last value
                 else:
-                    raise ValueError(f"Invalid conflict_resolution: {conflict_resolution}")
-            else:
-                combined[key] = value  # Key only in dict2, add it
+                    combined[key] = value  # Key not in combined, add it
 
         return combined
 
@@ -178,8 +212,12 @@ class RecipeMixer:
             applied_mixture = LookerMixtureDimension(**column.model_dump())
             return applied_mixture, None
 
-        combined_data = self._combine_dicts(column.model_dump(), mixture.model_dump())
+        combined_data = self._combine_dicts(column.model_dump(), mixture, conflict_resolution="first")
+        logging.info(column)
+        logging.info(remove_nones(mixture))
+        logging.info(remove_nones(combined_data))
         applied_mixture = LookerMixtureDimension(**combined_data)
+
         variants = self._flatten_mixture(applied_mixture)
 
         return applied_mixture, variants

@@ -13,15 +13,7 @@ recipes:
         - type: count_distinct
     filters:
       regex_include: _id$|^pk_|_code$
-  - name: numbers
-    filters:
-      type: number
-      regex_exclude: _id$|^pk_|_code$
-    dimension:
-      group_label: Numbers
-      measures:
-        - type: sum
-        - type: max
+
   - name: time_second_values
     filters:
       regex_include: _seconds$
@@ -35,6 +27,16 @@ recipes:
             - type: sum
       measures:
         - type: sum
+  - name: numbers
+    filters:
+      type: number
+      regex_exclude: _id$|^pk_|_code$
+    dimension:
+      group_label: Numbers
+      measures:
+        - type: sum
+        - type: max
+        
   - name: yesno
     filters:
       type: yesno
