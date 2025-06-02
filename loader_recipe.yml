@@ -13,21 +13,7 @@ recipes:
       measures:
         - type: count_distinct
     filters:
-      regex_include: _id$|^pk_|_code$
-
-  - name: time_second_values
-    filters:
-      regex_include: _seconds$
-      type: number
-    dimension:
-      group_label: Duration
-      variants:
-        - suffix: minutes
-          sql: $x/60
-          measures:
-            - type: sum
-      measures:
-        - type: sum
+      regex_include: _id$|^pk.*_|_code$
 
   - name: numbers
     filters:
@@ -35,6 +21,22 @@ recipes:
       regex_exclude: _id$|^pk_|_code$
     dimension:
       group_label: Numbers
+      value_format_name: decimal_1
+      measures:
+        - type: sum
+
+  - name: time_second_values
+    filters:
+      regex_include: _seconds$
+      type: number
+    dimension:
+      group_label: Durations
+      value_format_name: decimal_0
+      variants:
+        - suffix: minutes
+          sql: $x/60
+          measures:
+            - type: sum
       measures:
         - type: sum
         

@@ -165,7 +165,7 @@ class Cli:
         asyncio.run(self.get_schemas())
 
         for schema in self.schemas:
-            logging.info(f"Generating LookML for '{schema.name}'")
+            logging.debug(f"Generating LookML for '{schema.name}'")
 
             mixture = self.mixer.mixturize(schema)
 
