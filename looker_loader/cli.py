@@ -164,10 +164,16 @@ class Cli:
 
         asyncio.run(self.get_schemas())
 
+        mixures = []
         for schema in self.schemas:
             logging.debug(f"Generating LookML for '{schema.name}'")
 
             mixture = self.mixer.mixturize(schema)
+            mixures.append(mixture)
+
+        # insert lexical parsing and interaction with lexicanum here.
+
+        for mixture in mixures:
 
             views, explore = self.lookml.generate(
                 model=mixture,

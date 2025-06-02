@@ -196,7 +196,7 @@ class RecipeMixer:
             result.append(v)
         return result
 
-    def mixturize(self, table: DatabaseTable) -> DatabaseTable:
+    def mixturize(self, table: DatabaseTable) -> LookerMixture:
         """
         Search for and apply recipes to the table.
         """
