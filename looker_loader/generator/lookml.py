@@ -46,23 +46,23 @@ class LookmlGenerator:
         return views
 
     def _generate_joins(self, model, joins = None, parent = None, depth = 0):
-        """Create a join for the model"""
+        """Recursively create joins for a model by detecting nested fields."""
         if joins is None:
             joins = []
 
         if parent is not None:
-            parent_name = f"{parent}__{model.name}"
+            join_name = f"{parent}__{model.name}"
         else:
-            parent_name = model.name
+            join_name = model.name
 
         for field in model.fields:
             if field.fields is not None:
-                self._generate_joins(field, joins, parent=parent_name, depth=depth + 1)
+                self._generate_joins(field, joins, parent=join_name, depth=depth + 1)
 
         if parent is not None:
             join = {
-                "name": parent_name,
-                "sql": f"LEFT JOIN UNNEST(${{{parent}.{model.name}}}) AS {parent_name}",
+                "name": join_name,
+                "sql": f"LEFT JOIN UNNEST(${{{parent}.{model.name}}}) AS {join_name}",
                 "type": "left_outer",
                 "relationship": "one_to_many",
                 "required_joins": parent if depth > 1 else None,

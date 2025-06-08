@@ -3,6 +3,7 @@ import logging
 import re
 
 def fix_multiline_indentation(text, indent_size=2):
+    """Fixes indentation for multiline strings in LookML."""
     lines = text.split('\n')
     fixed_lines = []
     inside_multiline_string = False

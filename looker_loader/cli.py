@@ -105,12 +105,12 @@ class Cli:
         self.config = Config(**data['config'])
 
     def _load_tables(self):
-        """Load the schemas from the database"""
+        """Load the the list of tables to get schemas for from the database"""
         process_list = []
 
         for d in self.config.bigquery:
             if not d.tables:
-                logging.info("Finding all tables")
+                logging.info(f"Finding all tables in dataset {d.dataset_id} of project {d.project_id}")
                 tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
             else:
                 tables = d.tables
@@ -164,16 +164,42 @@ class Cli:
 
         asyncio.run(self.get_schemas())
 
-        mixures = []
+        mixtures = []
         for schema in self.schemas:
             logging.debug(f"Generating LookML for '{schema.name}'")
 
             mixture = self.mixer.mixturize(schema)
-            mixures.append(mixture)
+            mixtures.append(mixture)
+        
+        from looker_loader.tools.label_gatherer import gather_field_names, group_strings_by_similarity
+        import json
+        from looker_loader.exceptions import CliError
+        from looker_loader.tools.llm import get_field_label
 
-        # insert lexical parsing and interaction with lexicanum here.
+        try:
+            lexicanum = self._file_handler.read(f"lexicanum.json", file_type="json")
+        except CliError:
+            logging.warning("lexicanum.json not found")
+            lexicanum = {}
+        
+        field_names = gather_field_names(mixtures)
+        for field_name in field_names:
+            if field_name not in lexicanum:
+                logging.info(f"Adding field '{field_name}' to lexicanum")
+                lexicanum[field_name] = None
 
-        for mixture in mixures:
+        from rich import print 
+        print(group_strings_by_similarity(field_names, group_size=20, similarity_threshold=0.3))
+
+        for field, label in lexicanum.items():
+            if label is None:
+                logging.info(f"Generating label for field '{field}'")
+                lexicanum[field] = get_field_label(field_name=field)
+
+        self._file_handler.write("lexicanum.json", json.dumps(lexicanum, indent=2))
+
+
+        for mixture in mixtures:
 
             views, explore = self.lookml.generate(
                 model=mixture,

@@ -1,5 +1,6 @@
 # /loader_recipe.yml
 /loader_config.yml
+lexicanum.json
 output/
 # Byte-compiled / optimized / DLL files
 __pycache__/
