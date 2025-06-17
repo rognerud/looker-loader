@@ -1,6 +1,7 @@
 import google.auth
 from google.auth.transport.requests import Request
 import requests
+import google.api_core.exceptions
 
 from looker_loader.models.database import DatabaseTable
 
@@ -72,9 +73,15 @@ class BigQueryDatabase:
         from google.cloud import bigquery
         client = bigquery.Client()
         dataset_url = f"{project_id}.{dataset_id}"
-        tables = client.list_tables(dataset_url)
+        try:
+            tables = client.list_tables(dataset_url)
 
-        table_list = []
-        for table in tables:
-            table_list.append(table.table_id)
+            table_list = []
+            for table in tables:
+                table_list.append(table.table_id)
+
+        except google.api_core.exceptions.NotFound as e:
+            logging.error(f"Dataset {dataset_url} not found: {e}")
+            return []
+
         return table_list # Make an API request.

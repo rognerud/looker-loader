@@ -5,6 +5,7 @@ output/
 __pycache__/
 *.py[cod]
 *$py.class
+secret
 .vscode
 # C extensions
 *.so
