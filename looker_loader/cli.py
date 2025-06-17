@@ -67,7 +67,7 @@ class Cli:
         contents: str,
     ) -> str:
         """Write LookML content to a file."""
-
+        logging.info(f"Writing LookML file to {file_path}")
         file_name = os.path.basename(file_path)
         file_path = os.path.join(output_dir, file_path.split(file_name)[0])
         os.makedirs(file_path, exist_ok=True)
@@ -166,7 +166,7 @@ class Cli:
 
         mixures = []
         for schema in self.schemas:
-            logging.debug(f"Generating LookML for '{schema.name}'")
+            logging.info(f"Generating LookML for '{schema.name}'")
 
             mixture = self.mixer.mixturize(schema)
             mixures.append(mixture)
@@ -178,10 +178,10 @@ class Cli:
             views, explore = self.lookml.generate(
                 model=mixture,
             )
-
+            logging.info(f"Generated {len(views)} views")
             self._write_lookml_file(
                 output_dir=f'output/{schema.table_group}',
-                file_path=f'{schema.name}.view.lkml',
+                file_path=f'{mixture.name}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )
 

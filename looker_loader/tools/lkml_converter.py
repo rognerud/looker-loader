@@ -65,8 +65,15 @@ def convert_to_lkml(views, explore):
       dumpfile = {
           "views": python_r,
       }
-
-    lk = lkml.dump(dumpfile)
+    try:
+      lk = lkml.dump(dumpfile)
+    except TypeError as e:
+        logging.error(f"Error converting to LKML: {e}")
+        try:
+          for view in python_r:
+            t = lkml.dump(view)
+        except TypeError as e2:
+            logging.error(f"Error converting individual view to LKML: {view}")
     indention_fixed = fix_multiline_indentation(lk)
 
     return indention_fixed

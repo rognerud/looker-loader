@@ -31,7 +31,7 @@ class LookerViewElement(BaseModel):
         None
     ]] = None
     label: Optional[str] = None
-    hidden: Optional[bool] = None
+    hidden: Optional[Union[bool, str]] = None
     description: Optional[str] = None
     tags: Optional[List[str]] = None
 
@@ -126,14 +126,22 @@ class LookerDimension(LookerViewElement):
     can_filter: Optional[Union[bool, str]] = Field(default=None)
     group_item_label: Optional[str] = Field(default=None)
     order_by_field: Optional[str] = Field(default=None)
-    suggestable: Optional[bool] = Field(default=None)
-    case_sensitive: Optional[bool] = Field(default=None)
-    allow_fill: Optional[bool] = Field(default=None)
+    suggestable: Optional[Union[bool, str]] = Field(default=None)
+    case_sensitive: Optional[Union[bool, str]] = Field(default=None)
+    full_suggestions: Optional[Union[bool, str]] = Field(default=None)
+    allow_fill: Optional[Union[bool, str]] = Field(default=None)
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[str] = Field(default=None)
     sql: Optional[str] = None
     # fields: Optional[List['LookerDimension']] = None
 
+    @field_validator("primary_key", "convert_tz", "can_filter", "hidden", "case_sensitive", "full_suggestions", "allow_fill", mode="after")
+    @classmethod
+    def bool_to_yesno(cls, value):
+        """Convert boolean values to 'yes'/'no' strings."""
+        if isinstance(value, bool):
+            return "yes" if value else "no"
+        return value
 
     # @field_validator("timeframes", mode="before")
     # def check_enums(cls, values):

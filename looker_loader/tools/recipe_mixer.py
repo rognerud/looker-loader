@@ -185,8 +185,8 @@ class RecipeMixer:
             d.fields = []
             for f in field.fields:
                 r = self._recursively_apply_mixture(f)
-                if len(r) > 1:
-                    logging.info(r)
+                # if len(r) > 1:
+                #     logging.info(r)
                 d.fields.extend(r)
 
         result = [d]
