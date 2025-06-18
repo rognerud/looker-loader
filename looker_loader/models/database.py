@@ -102,16 +102,33 @@ class DatabaseTable(BaseModel):
         from_attributes = True
 
     @model_validator(mode="before")
-    def push_order(cls, values):
-        """ push order to children 
-            order of the fields from the parent table
-            is used to order the children fields
-        """
+    def flatten_non_repeated_structs(cls, values):
+        """ flatten non-repeated structs that are not arrays """
+        
         if values.get("fields") is not None:
-            fields = []
+            flattened_fields = []
+            pop_fields = []
+
+            for i, field in enumerate(values.get("fields")):
+                struct_fields = []
+                if field.get("mode") != "REPEATED" and field.get("type") == "RECORD" and field.get("fields") is not None:
+                    # Flatten the struct
+                    for subfield in field.get("fields"):
+                        subfield["name"] = f"{field.get('name')}.{subfield.get('name')}"
+                        struct_fields.append(subfield)
+
+                    pop_fields.append(i)
+                    flattened_fields.extend(struct_fields)
+
+            if flattened_fields:
+                for i in sorted(pop_fields, reverse=True):
+                    values["fields"].pop(i)
+                values["fields"].extend(flattened_fields)
+
+            ordered_fields = []
             for i, field in enumerate(values.get("fields")):
                 field["order"] = i
-                fields.append(field)
-            values["fields"] = fields
-        return values
+                ordered_fields.append(field)
+            values["fields"] = ordered_fields
 
+        return values
