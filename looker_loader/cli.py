@@ -2,6 +2,7 @@ import argparse
 import os
 import logging
 import lkml
+import re
 from rich.logging import RichHandler
 from looker_loader.utils import FileHandler
 from looker_loader.models.recipe import CookBook
@@ -23,6 +24,7 @@ class Cli:
     """
 
     def __init__(self):
+        self.DEFAULT_LOOKML_OUTPUT_DIR = "output"
         self._args_parser = self._init_argparser()
         self._file_handler = FileHandler()
 
@@ -47,17 +49,23 @@ class Cli:
             type=str,
             default=".",
         )
+        parser.add_argument(
+            "--file_pattern","-r",
+            help="regex to filter the tables to be loaded",
+            type=str,
+            default=".*",
+        )
         # parser.add_argument(
         #     "--version",
         #     action="version",
         #     version=f'looker-loader {version("looker-loader")}',
         # )
-        # parser.add_argument(
-        #     "--output-dir",
-        #     help="Path to a directory that will contain the generated lookml files",
-        #     default=self.DEFAULT_LOOKML_OUTPUT_DIR,
-        #     type=str,
-        # )
+        parser.add_argument(
+            "--output-dir","-o",
+            help="Path to a directory that will contain the generated lookml files",
+            default=self.DEFAULT_LOOKML_OUTPUT_DIR,
+            type=str,
+        )
         return parser
 
     def _write_lookml_file(
@@ -116,14 +124,20 @@ class Cli:
                 tables = d.tables
 
             for table in tables:
-                
-                process_list.append(
-                    {
-                        "project_id": d.project_id,
-                        "dataset_id": d.dataset_id,
-                        "table_id": table,
-                    }
-                )
+
+                if re.search(
+                    self._args_parser.parse_args().file_pattern,
+                    table,
+                ) is None:
+                    continue
+                else:
+                    process_list.append(
+                        {
+                            "project_id": d.project_id,
+                            "dataset_id": d.dataset_id,
+                            "table_id": table,
+                        }
+                    )
 
         self.tables = process_list
 
@@ -178,9 +192,8 @@ class Cli:
             views, explore = self.lookml.generate(
                 model=mixture,
             )
-            logging.info(f"Generated {len(views)} views")
             self._write_lookml_file(
-                output_dir=f'output/{schema.table_group}',
+                output_dir=f'{args.output_dir}/{schema.table_group}',
                 file_path=f'{mixture.name}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )
