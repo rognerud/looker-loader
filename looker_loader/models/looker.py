@@ -68,7 +68,7 @@ class LookerMeasure(LookerViewElement):
     type: LookerMeasureType
 
     # Fields specific to certain measure types
-    approximate: Optional[bool] = None  # For count_distinct
+    approximate: Optional[Union[bool, str]] = None  # For count_distinct
     approximate_threshold: Optional[int] = None  # For count_distinct
     precision: Optional[int] = None  # For average, sum
     sql_distinct_key: Optional[str] = None  # For count_distinct
@@ -76,6 +76,14 @@ class LookerMeasure(LookerViewElement):
     required_access_grants: Optional[List[str]] = Field(default=None)
     filters: Optional[List[LookerMeasureFilter]] = None
     sql: Optional[str] = None  # SQL expression for the measure
+
+    @field_validator("hidden", "approximate", mode="after")
+    @classmethod
+    def bool_to_yesno(cls, value):
+        """Convert boolean values to 'yes'/'no' strings."""
+        if isinstance(value, bool):
+            return "yes" if value else "no"
+        return value
 
     @model_validator(mode="before")
     def validate_measure_attributes(cls, values):
@@ -142,24 +150,6 @@ class LookerDimension(LookerViewElement):
         if isinstance(value, bool):
             return "yes" if value else "no"
         return value
-
-    # @field_validator("timeframes", mode="before")
-    # def check_enums(cls, values):
-    #     if values is not None:
-    #         if isinstance(values, list[str]):
-    #             timeframes = values
-    #             valid_timeframes = [
-    #                 tf for tf in timeframes if isinstance(tf, LookerTimeFrame)
-    #             ]
-    #             if len(valid_timeframes) < len(timeframes):
-    #                 invalid_timeframes = set(timeframes) - set(valid_timeframes)
-    #                 warnings.warn(
-    #                     f"Invalid timeframes: {invalid_timeframes}. "
-    #                 )
-    #                 values["timeframes"] = valid_timeframes
-
-    #     return values
-
 
 class ValidatedLookerDimension(LookerDimension):
     """Looker data for a dimension with validation."""
