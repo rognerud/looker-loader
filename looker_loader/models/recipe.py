@@ -60,14 +60,14 @@ class LookerMixtureDimension(LookerRecipeDimension):
         if values.get("measures") is not None:
             inherited_children = []
             for child in values.get("measures", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
                 inherited_children.append(child)
             values["measures"] = inherited_children
 
         if values.get("variants") is not None:
             inherited_children = []
             for child in values.get("variants", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
                 inherited_children.append(child)
             values["variants"] = inherited_children
         return values

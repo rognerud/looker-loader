@@ -23,20 +23,6 @@ class BigQueryDatabase:
             "Content-Type": "application/json",
         }
 
-    def _fetch_table_schema(
-        self, project_id: str, dataset_id: str, table_id: str
-    ) -> DatabaseTable:
-        """Fetch the schema of a BigQuery table and parse it into a Pydantic model."""
-        self.init()
-        url = BigqueryUrl.BIGQUERY.value.format(
-            project_id=project_id, dataset_id=dataset_id, table_id=table_id
-        )
-
-        response = requests.get(url, headers=self.headers, timeout=10)
-        response.raise_for_status()
-
-        self.json_schema = response.json()
-
     async def _async_fetch_table_schema(self, project_id: str, dataset_id: str, table_id: str):
         """Fetch schema data for a table"""
         # logging.info("Fetching schema for table '%s'", table_id)
@@ -60,12 +46,6 @@ class BigQueryDatabase:
             fields=fields,
             sql_table_name=f'{table_ref.get("projectId")}.{table_ref.get("datasetId")}.{table_ref.get("tableId")}',
         )
-
-    def get_table_schema(self, project_id, dataset_id, table_id) -> DatabaseTable:
-        """get the schema of a bigquery table and parse it into a common database schema."""
-        logging.info("Fetching schema for table '%s'", table_id)
-        json_schema = self._fetch_table_schema(project_id, dataset_id, table_id)
-        return self._parse_schema(json_schema)
 
     def get_tables_in_dataset(self, project_id: str, dataset_id: str) -> list[DatabaseTable]:
         """Get all tables in a BigQuery dataset."""

@@ -28,6 +28,7 @@ class Cli:
         self._args_parser = self._init_argparser()
         self._file_handler = FileHandler()
 
+
     def _init_argparser(self):
         """Create and configure the argument parser"""
         parser = argparse.ArgumentParser(
@@ -75,7 +76,7 @@ class Cli:
         contents: str,
     ) -> str:
         """Write LookML content to a file."""
-        logging.info(f"Writing LookML file to {file_path}")
+        logging.debug(f"Writing LookML file to {file_path}")
         file_name = os.path.basename(file_path)
         file_path = os.path.join(output_dir, file_path.split(file_name)[0])
         os.makedirs(file_path, exist_ok=True)
@@ -118,7 +119,7 @@ class Cli:
 
         for d in self.config.bigquery:
             if not d.tables:
-                logging.info("Finding all tables")
+                logging.info("Finding all tables in dataset %s", d.dataset_id)
                 tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
             else:
                 tables = d.tables
@@ -147,7 +148,6 @@ class Cli:
             and parse them into a common database schema
             and store them in self.schemas
         """
-        self.database.init()
         tasks = [
             self.database._async_fetch_table_schema(
             project_id=table.get("project_id"),
@@ -170,12 +170,15 @@ class Cli:
         """Run the CLI"""
         args = self._args_parser.parse_args()
         self.database = BigQueryDatabase()
+        self.database.init()
+
         self.lookml = LookmlGenerator(cli_args=args)
 
         self._load_recipe()
         self._load_config()
         self._load_tables()
 
+        # retrieve the schemas of the tables
         asyncio.run(self.get_schemas())
 
         mixures = []

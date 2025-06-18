@@ -35,6 +35,14 @@ LookerMeasureType = Literal[
     "running_total",
 ]
 
+LookerDataType = Literal[
+    "epoch",
+    "timestamp",
+    "date",
+    "datetime",
+    "yyyymmdd",
+]
+
 LookerType = Literal[
         "bin",
         "date",
