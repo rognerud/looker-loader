@@ -39,6 +39,22 @@ recipes:
             - type: sum
       measures:
         - type: sum
+
+  - name: time_date_values
+    filters:
+      regex_include: _date
+    dimension:
+      timeframes:
+        - raw,
+        - time,
+        - time_of_day,
+        - date,
+        - week,
+        - month,
+        - quarter,
+        - year,
+        - day_of_week
+        - week_of_year
         
   - name: yesno
     filters:
