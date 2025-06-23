@@ -5,6 +5,7 @@ from looker_loader.models.looker import (
     LookerDimension,
 )
 from looker_loader.enums import LookerType
+from jinja2 import Environment
 
 # Models for loading recipes, and for generating looker data from the combination of 
 # the database and the recipes
@@ -33,6 +34,20 @@ class LookerMixtureMeasure(LookerMeasure):
     @model_validator(mode="before")
     def fix_name(cls, values):
         values["name"] = f"m_{values.get('type')}_{values.get('parent_name')}"
+
+        jinja_env = Environment()
+        if values.get("sql") is not None:
+            values["sql"] = jinja_env.from_string(values.get("sql", "")).render(values)
+        if values.get("html") is not None:
+            values["html"] = jinja_env.from_string(values.get("html", "")).render(values)
+        if values.get("label") is not None:
+            values["label"] = jinja_env.from_string(values.get("label", "")).render(values)
+        if values.get("group_label") is not None:
+            values["group_label"] = jinja_env.from_string(values.get("group_label", "")).render(values)
+        if values.get("description") is not None:
+            values["description"] = jinja_env.from_string(values.get("description", "")).render(values)
+
+
         if values.get("sql") is None:
             values["sql"] = f"${{{values.get("parent_name")}}}"
         if values.get("group_label") is None:
@@ -76,6 +91,19 @@ class LookerMixtureDimension(LookerRecipeDimension):
     @model_validator(mode="before")
     def fix_name(cls, values):
         if values.get("suffix") is not None:
+
+            jinja_env = Environment()
+            if values.get("sql") is not None:
+                values["sql"] = jinja_env.from_string(values.get("sql", "")).render(values)
+            if values.get("html") is not None:
+                values["html"] = jinja_env.from_string(values.get("html", "")).render(values)
+            if values.get("label") is not None:
+                values["label"] = jinja_env.from_string(values.get("label", "")).render(values)
+            if values.get("group_label") is not None:
+                values["group_label"] = jinja_env.from_string(values.get("group_label", "")).render(values)
+            if values.get("description") is not None:
+                values["description"] = jinja_env.from_string(values.get("description", "")).render(values)
+
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
             if values.get("remove") != "":
                 values["name"] = values["name"].replace(values.get("remove"), "")
@@ -83,8 +111,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
                 values["group_label"] = values.get("parent_group_label")
             if values.get("description") is None:
                 values["description"] = f"derived {values.get('suffix')} of {values.get("parent_name")} : {values.get("parent_description")}"
-            values["type"] = values.get("parent_type", "string")
-            values["sql"] = values.get("sql").replace("$x", f"${{{values.get('parent_name')}}}")
+            values["type"] = values.get("parent_type", values.get("type", "string"))
         return values
 
 class LookerMixture(BaseModel):

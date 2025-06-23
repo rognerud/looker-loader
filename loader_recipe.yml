@@ -35,7 +35,7 @@ recipes:
       variants:
         - suffix: minutes
           remove: _seconds
-          sql: $x/60
+          sql: ${ {{ parent_name }} } / 60
           measures:
             - type: sum
       measures:
@@ -56,7 +56,20 @@ recipes:
         - year,
         - day_of_week
         - week_of_year
-        
+      variants:
+        - suffix: iso_year
+          hidden: true
+          type: number
+          remove: _date
+          group_label: "{{ parent_name.replace('_date', '').replace('_', ' ').title() }}"
+          sql: Extract(isoyear from ${ {{ parent_name }} })
+        - suffix: iso_week
+          hidden: true
+          group_label: "{{ parent_name  | replace('_date', '' | replace('_','') | capitalize) }}"
+          type: number
+          remove: _date
+          sql: Extract(isoweek from ${ {{ parent_name }} })
+
   - name: yesno
     filters:
       type: yesno
