@@ -46,15 +46,9 @@ class Cli:
         )
         parser.add_argument(
             "--config",
-            help="Path to the config file",
+            help="Path to the config files",
             type=str,
             default=".",
-        )
-        parser.add_argument(
-            "--file_pattern","-r",
-            help="regex to filter the tables to be loaded",
-            type=str,
-            default=".*",
         )
         # parser.add_argument(
         #     "--version",

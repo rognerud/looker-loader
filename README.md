@@ -1,17 +1,11 @@
-# work in progress
+# available as a python package https://pypi.org/project/looker_loader/
 
-## define rules for loading data and automatically apply it when loading the data in looker
-
-### intended features
-- write rules for how to format columns
-- write rules for generating derived columns and measures
-- refresh tables using cicd
-- leverage llm to translate names and descriptions using locales, in a editable way
+## automatically refresh table views, and create rules for how you want your data to be loaded into looker
 
 ### how to run:
 uv add looker_loader
 
-define a loader_config.yml file
+define a loader_config.yml file in your looker repository
 config:
   bigquery:
     - project_id: "project_name"
@@ -19,7 +13,7 @@ config:
       tables:
         - "table_name"
 
-define a loader_recipe.yml file
+define a loader_recipe.yml file in your looker repository
 recipes:
   - name: primary_key
     filters:
