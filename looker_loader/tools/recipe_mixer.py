@@ -156,12 +156,15 @@ class RecipeMixer:
 
         return mixture
 
-    def apply_mixture(self, column: DatabaseField) -> tuple[LookerMixtureDimension, Optional[List[LookerMixtureDimension]]]:
+    def apply_mixture(self, column: DatabaseField, config) -> tuple[LookerMixtureDimension, Optional[List[LookerMixtureDimension]]]:
         """Create and apply a mixture to a column, returning the applied mixture and its variants."""
-        mixture = self.create_mixture(column)
+        
+        if not config.unstyled:
+            mixture = self.create_mixture(column)
+        else:
+            mixture = None
 
         if not mixture:
-            logging.debug(f"No mixture found for column {column.name}")
             applied_mixture = LookerMixtureDimension(**column.model_dump())
             return applied_mixture, None
 
@@ -174,17 +177,17 @@ class RecipeMixer:
         return applied_mixture, variants
 
     def _recursively_apply_mixture(
-        self, field: DatabaseField
+        self, field: DatabaseField, config
     ) -> list[LookerMixtureDimension]:
         """
         Recursively apply the mixture to the column and its subfields.
         """
-        d, v = self.apply_mixture(field) 
+        d, v = self.apply_mixture(field, config) 
 
         if field.fields:
             d.fields = []
             for f in field.fields:
-                r = self._recursively_apply_mixture(f)
+                r = self._recursively_apply_mixture(f, config)
                 # if len(r) > 1:
                 #     logging.info(r)
                 d.fields.extend(r)
@@ -196,7 +199,7 @@ class RecipeMixer:
             result.append(v)
         return result
 
-    def mixturize(self, table: DatabaseTable) -> LookerMixture:
+    def mixturize(self, table: DatabaseTable, config) -> LookerMixture:
         """
         Search for and apply recipes to the table.
         """
@@ -205,7 +208,7 @@ class RecipeMixer:
 
         fields = []
         for field in table.fields:
-            applied = self._recursively_apply_mixture(field)
+            applied = self._recursively_apply_mixture(field, config)
             if isinstance(applied, list):
                 fields.extend(applied)
             else:

@@ -23,7 +23,7 @@ class BigQueryDatabase:
             "Content-Type": "application/json",
         }
 
-    async def _async_fetch_table_schema(self, project_id: str, dataset_id: str, table_id: str):
+    async def _async_fetch_table_schema(self, project_id: str, dataset_id: str, table_id: str, config=None) -> tuple[dict, dict]:
         """Fetch schema data for a table"""
         # logging.info("Fetching schema for table '%s'", table_id)
 
@@ -32,7 +32,8 @@ class BigQueryDatabase:
         )
         async with httpx.AsyncClient() as client:
             data = await client.get(url, headers=self.headers, timeout=10)  # Await the response and get the content
-        return data.json()  # Return the JSON content
+
+        return data.json(), config # Return the JSON content
 
     def _parse_schema(self, json) -> DatabaseTable:
         """Parse the schema of a BigQuery table into a Pydantic model."""

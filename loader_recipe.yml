@@ -34,6 +34,7 @@ recipes:
       value_format_name: decimal_0
       variants:
         - suffix: minutes
+          remove: _seconds
           sql: $x/60
           measures:
             - type: sum

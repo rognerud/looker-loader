@@ -118,6 +118,11 @@ class Cli:
         process_list = []
 
         for d in self.config.bigquery:
+            if not d.project_id or not d.dataset_id:
+                raise ValueError(
+                    f"Project ID and Dataset ID are required for BigQuery configuration: {d}"
+                )
+            
             if not d.tables:
                 logging.info("Finding all tables in dataset %s", d.dataset_id)
                 tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
@@ -125,18 +130,25 @@ class Cli:
                 tables = d.tables
 
             for table in tables:
-
-                if re.search(
-                    self._args_parser.parse_args().file_pattern,
-                    table,
-                ) is None:
-                    continue
+                if d.config.regex_include:
+                    if re.search(
+                        d.config.regex_include,
+                        table,
+                    ) is None:
+                        continue
+                if d.config.regex_exclude:
+                    if re.search(
+                        d.config.regex_exclude,
+                        table,
+                    ) is not None:
+                        continue
                 else:
                     process_list.append(
                         {
                             "project_id": d.project_id,
                             "dataset_id": d.dataset_id,
                             "table_id": table,
+                            "config": d.config
                         }
                     )
 
@@ -153,6 +165,7 @@ class Cli:
             project_id=table.get("project_id"),
             dataset_id=table.get("dataset_id"),
             table_id=table.get("table_id"),
+            config=table.get("config")
             )
             for table in self.tables
             ]
@@ -161,8 +174,8 @@ class Cli:
         results = await asyncio.gather(*tasks)
 
         schemas = []
-        for json in results:
-            schemas.append(self.database._parse_schema(json))
+        for r in results:
+            schemas.append({"schema":self.database._parse_schema(r[0]), "config": r[1]})
 
         self.schemas = schemas
 
@@ -181,23 +194,27 @@ class Cli:
         # retrieve the schemas of the tables
         asyncio.run(self.get_schemas())
 
-        mixures = []
-        for schema in self.schemas:
-            logging.info(f"Generating LookML for '{schema.name}'")
+        mixtures = []
+        for schema_object in self.schemas:
+            schema = schema_object.get("schema")
+            config = schema_object.get("config")
 
-            mixture = self.mixer.mixturize(schema)
-            mixures.append(mixture)
+            mixture = self.mixer.mixturize(schema, config=config)
+            mixtures.append({"mixture":mixture, "config": config})
 
         # insert lexical parsing and interaction with lexicanum here.
 
-        for mixture in mixures:
+        for m in mixtures:
+            mixture = m.get("mixture")
+            config = m.get("config")
 
             views, explore = self.lookml.generate(
                 model=mixture,
+                config=config,
             )
             self._write_lookml_file(
                 output_dir=f'{args.output_dir}/{schema.table_group}',
-                file_path=f'{mixture.name}.view.lkml',
+                file_path=f'{config.prefix_files}{mixture.name}{config.suffix_files}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )
 

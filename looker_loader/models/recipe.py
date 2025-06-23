@@ -12,6 +12,7 @@ from looker_loader.enums import LookerType
 class LookerRecipeDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
     suffix: str
+    remove: Optional[str] = ""
     sql: Optional[str] = None
     html: Optional[str] = None
     measures: Optional[List[LookerMeasure]] = None
@@ -76,6 +77,8 @@ class LookerMixtureDimension(LookerRecipeDimension):
     def fix_name(cls, values):
         if values.get("suffix") is not None:
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
+            if values.get("remove") != "":
+                values["name"] = values["name"].replace(values.get("remove"), "")
             if values.get("group_label") is None:
                 values["group_label"] = values.get("parent_group_label")
             if values.get("description") is None:

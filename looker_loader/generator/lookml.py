@@ -13,7 +13,7 @@ class LookmlGenerator:
     def __init__(self, cli_args):
         self._cli_args = cli_args
     
-    def _generate_views(self, model, views = None, parent = None):
+    def _generate_views(self, model, config, views = None, parent = None):
         """Split up the model into views"""
 
         if views is None:
@@ -23,15 +23,15 @@ class LookmlGenerator:
         view_measures = []
 
         if parent is not None:
-            view_name = f"{parent}__{model.name}"
+            view_name = f"{config.prefix_views}{parent}__{model.name}{config.suffix_views}"
         else:
-            view_name = model.name
+            view_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
 
         for field in model.fields:
             view_dimensions.append(field.model_dump())
 
             if field.fields is not None:
-                self._generate_views(field, views, parent=view_name)
+                self._generate_views(field, config, views, parent=view_name)
             if field.measures is not None:
                 for measure in field.measures:
                     view_measures.append(measure.model_dump())
@@ -45,19 +45,19 @@ class LookmlGenerator:
 
         return views
 
-    def _generate_joins(self, model, joins = None, parent = None, depth = 0):
+    def _generate_joins(self, model, config, joins = None, parent = None, depth = 0):
         """Create a join for the model"""
         if joins is None:
             joins = []
 
         if parent is not None:
-            parent_name = f"{parent}__{model.name}"
+            parent_name = f"{config.prefix_views}{parent}__{model.name}{config.suffix_views}"
         else:
-            parent_name = model.name
+            parent_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
 
         for field in model.fields:
             if field.fields is not None:
-                self._generate_joins(field, joins, parent=parent_name, depth=depth + 1)
+                self._generate_joins(field, config, joins, parent=parent_name, depth=depth + 1)
 
         if parent is not None:
             join = {
@@ -71,9 +71,9 @@ class LookmlGenerator:
 
         return joins
 
-    def _create_explore(self, model):
+    def _create_explore(self, model, config):
         """Create an explore for the model"""
-        joins = self._generate_joins(model)
+        joins = self._generate_joins(model, config)
 
         if joins:
             explore = {
@@ -82,11 +82,14 @@ class LookmlGenerator:
             }
             return explore
 
-    def generate(self, model) -> Dict:
+    def generate(self, model, config) -> Dict:
         """Generate LookML for a model."""
-        
-        view_groups = self._generate_views(model)
+        view_groups = self._generate_views(model, config)
 
-        explore = self._create_explore(model)
+        if config.explore:
+            # Create joins and explore if explore is enabled
+            explore = self._create_explore(model, config)
+        else:
+            explore = None
 
         return view_groups, explore
