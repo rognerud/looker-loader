@@ -2,35 +2,57 @@ import lkml
 import logging
 import re
 
+
 def fix_multiline_indentation(text, indent_size=2):
     lines = text.split('\n')
     fixed_lines = []
 
-    multiline_keys = ['html', 'sql', 'description']  # add more keys as needed
-    inside_multiline = False
-    current_indent = ""
+    inside_quoted_multiline = False
+    inside_unquoted_multiline = False
+    multiline_key = None
+    current_indent = ''
 
-    for i, line in enumerate(lines):
+    for line in lines:
         stripped = line.lstrip()
         leading_spaces = ' ' * (len(line) - len(stripped))
 
-        # Check if starting a multiline field
-        if not inside_multiline:
+        # Check if we're inside a quoted multiline string
+        if inside_quoted_multiline:
+            fixed_lines.append(current_indent + stripped)
+            if '"' in stripped:
+                # Count quotes to check for closing
+                if stripped.count('"') % 2 == 1:
+                    inside_quoted_multiline = False
+            continue
+
+        # Check if we're inside an unquoted multiline field
+        if inside_unquoted_multiline:
+            fixed_lines.append(current_indent + stripped)
+            if stripped.endswith(';;'):
+                inside_unquoted_multiline = False
+            continue
+
+        # Check for the start of a quoted multiline field
+        match_quoted = re.match(r'^(\w+):\s*"([^"]*)$', stripped)
+        if match_quoted:
+            multiline_key = match_quoted.group(1)
             fixed_lines.append(line)
+            if stripped.count('"') % 2 == 1:
+                inside_quoted_multiline = True
+                current_indent = leading_spaces + ' ' * indent_size
+            continue
 
-            for key in multiline_keys:
-                if re.match(rf'^{key}:\s*<[^>]*>?$', stripped) or stripped.startswith(f"{key}:") and not stripped.endswith(';;'):
-                    inside_multiline = True
-                    current_indent = leading_spaces + ' ' * indent_size
-                    break
+        # Check for unquoted multiline fields like html: <a ...>
+        match_unquoted = re.match(r'^(\w+):\s*<[^>]*>?$', stripped)
+        if match_unquoted and not stripped.endswith(';;'):
+            multiline_key = match_unquoted.group(1)
+            inside_unquoted_multiline = True
+            current_indent = leading_spaces + ' ' * indent_size
+            fixed_lines.append(line)
+            continue
 
-        else:
-            # Check if the multiline block has ended
-            if stripped.strip().endswith(';;'):
-                fixed_lines.append(current_indent + stripped)
-                inside_multiline = False
-            else:
-                fixed_lines.append(current_indent + stripped)
+        # Default case: just keep the line
+        fixed_lines.append(line)
 
     return '\n'.join(fixed_lines)
 

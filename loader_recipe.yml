@@ -75,7 +75,6 @@ recipes:
     dimension:
       group_label: Yes/No
       html: >-
-        "
           <a href='#drillmenu' target='_self'>
             {% if value == 'Yes' %}
             <span style='color:#B2AEFF;text-align:center;'>✔</span><span> Yes </span>
@@ -83,4 +82,3 @@ recipes:
             <span style='color:#F9A4A9;text-align:center;'>✖</span><span> No </span>
             {% endif %}
           </a>
-        "
