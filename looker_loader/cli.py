@@ -129,22 +129,26 @@ class Cli:
                         d.config.regex_include,
                         table,
                     ) is None:
+                        logging.debug(
+                            f"Table {table} excluded by regex {d.config.regex_include}")
                         continue
                 if d.config.regex_exclude:
                     if re.search(
                         d.config.regex_exclude,
                         table,
                     ) is not None:
+                        logging.debug(
+                            f"Table {table} excluded by regex {d.config.regex_exclude}")
                         continue
-                else:
-                    process_list.append(
-                        {
-                            "project_id": d.project_id,
-                            "dataset_id": d.dataset_id,
-                            "table_id": table,
-                            "config": d.config
-                        }
-                    )
+
+                process_list.append(
+                    {
+                        "project_id": d.project_id,
+                        "dataset_id": d.dataset_id,
+                        "table_id": table,
+                        "config": d.config
+                    }
+                )
 
         self.tables = process_list
 

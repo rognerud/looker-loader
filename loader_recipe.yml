@@ -44,29 +44,30 @@ recipes:
   - name: time_date_values
     filters:
       regex_include: _date
+      type: date
     dimension:
       timeframes:
-        - raw,
-        - time,
-        - time_of_day,
-        - date,
-        - week,
-        - month,
-        - quarter,
-        - year,
+        - raw
+        - time
+        - time_of_day
+        - date
+        - week
+        - month
+        - quarter
+        - year
         - day_of_week
         - week_of_year
       variants:
         - suffix: iso_year
           type: number
           remove: _date
-          group_label: "{{ parent_name.replace('_date', '').replace('_', ' ').title() }}"
-          sql: Extract(isoyear from ${ {{ parent_name }} })
+          group_label: "{{ parent_name.replace('_', ' ').title() }}"
+          sql: Extract(isoyear from ${{{ parent_name }}})
         - suffix: iso_week
-          group_label: "{{ parent_name  | replace('_date', '' | replace('_','') | capitalize) }}"
+          group_label: "{{ parent_name.replace('_', ' ').title() }}"
           type: number
           remove: _date
-          sql: Extract(isoweek from ${ {{ parent_name }} })
+          sql: Extract(isoweek from ${{{ parent_name }}})
 
   - name: yesno
     filters:
