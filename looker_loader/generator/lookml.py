@@ -23,7 +23,7 @@ class LookmlGenerator:
         view_measures = []
 
         if parent is not None:
-            view_name = f"{config.prefix_views}{parent}__{model.name}{config.suffix_views}"
+            view_name = f"{parent}__{model.name}{config.suffix_views}"
         else:
             view_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
 
@@ -51,7 +51,7 @@ class LookmlGenerator:
             joins = []
 
         if parent is not None:
-            parent_name = f"{config.prefix_views}{parent}__{model.name}{config.suffix_views}"
+            parent_name = f"{parent}__{model.name}{config.suffix_views}"
         else:
             parent_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
 

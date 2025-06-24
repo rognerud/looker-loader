@@ -58,13 +58,11 @@ recipes:
         - week_of_year
       variants:
         - suffix: iso_year
-          hidden: true
           type: number
           remove: _date
           group_label: "{{ parent_name.replace('_date', '').replace('_', ' ').title() }}"
           sql: Extract(isoyear from ${ {{ parent_name }} })
         - suffix: iso_week
-          hidden: true
           group_label: "{{ parent_name  | replace('_date', '' | replace('_','') | capitalize) }}"
           type: number
           remove: _date
