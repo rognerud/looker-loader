@@ -25,7 +25,7 @@ class BigQueryDatabase:
 
     async def _async_fetch_table_schema(self, project_id: str, dataset_id: str, table_id: str, config=None) -> tuple[dict, dict]:
         """Fetch schema data for a table"""
-        # logging.info("Fetching schema for table '%s'", table_id)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
 
         url = BigqueryUrl.BIGQUERY.value.format(
             project_id=project_id, dataset_id=dataset_id, table_id=table_id

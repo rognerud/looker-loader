@@ -13,6 +13,8 @@ from looker_loader.models.recipe import LookerMixture
 from looker_loader.generator.lookml import LookmlGenerator
 from looker_loader.tools.lkml_converter import convert_to_lkml
 import asyncio
+import yaml
+from looker_loader.models.lex import Lex
 
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
@@ -27,6 +29,7 @@ class Cli:
         self.DEFAULT_LOOKML_OUTPUT_DIR = "output"
         self._args_parser = self._init_argparser()
         self._file_handler = FileHandler()
+        self.args = self._args_parser.parse_args()
 
 
     def _init_argparser(self):
@@ -128,7 +131,7 @@ class Cli:
                 raise ValueError(
                     f"Project ID and Dataset ID are required for BigQuery configuration: {d}"
                 )
-            
+
             if not d.tables:
                 logging.info("Finding all tables in dataset %s", d.dataset_id)
                 tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
@@ -164,6 +167,31 @@ class Cli:
 
         self.tables = process_list
 
+    def _load_lexicanum(self, mixtures):
+        """Load the lexicanum from a yaml file"""
+        logging.info("Lexicanum is enabled. Collecting lexical fields from mixtures...")
+        try:
+            with open('lexicanum.yml', 'r') as file:
+                lex_fields = yaml.safe_load(file)
+        except FileNotFoundError:
+            logging.warning("lexicanum.yml file not found. Creating..")
+            lex_fields = {}
+
+        for m in mixtures:
+            mixture = m.get("mixture")
+            for field in mixture.fields:
+                if field.name in lex_fields.keys():
+                    continue
+                else:
+                    lex_fields[field.name] = {'label': None}
+
+        logging.debug("Lexical fields collected from mixtures, writing to lexicanum.yml")
+        # Write to a YAML file
+        with open('lexicanum.yml', 'w') as file:
+            yaml.dump(lex_fields, file, sort_keys=True)
+
+        self.lexicanum = Lex(lex_fields)
+
     async def get_schemas(self):
         """
             asyncronously fetch the schemas of the tables
@@ -191,11 +219,10 @@ class Cli:
 
     def run(self):
         """Run the CLI"""
-        args = self._args_parser.parse_args()
         self.database = BigQueryDatabase()
         self.database.init()
 
-        self.lookml = LookmlGenerator(cli_args=args)
+        self.lookml = LookmlGenerator(cli_args=self.args)
 
         self._load_recipe()
         self._load_config()
@@ -212,47 +239,23 @@ class Cli:
             mixture = self.mixer.mixturize(schema, config=config)
             mixtures.append({"mixture":mixture, "config": config, "table_group": schema.table_group})
 
-        # insert lexical parsing and interaction with lexicanum here.
-        if args.lex:
-            import yaml
-            logging.info("Lexicanum is enabled")
-            try:
-                with open('lexicanum.yml', 'r') as file:
-                    lex_fields = yaml.safe_load(file)
-            except FileNotFoundError:
-                logging.warning("lexicanum.yml file not found. Creating..")
-                lex_fields = {}
-
-            for m in mixtures:
-                mixture = m.get("mixture")
-                for field in mixture.fields:
-                    if field.name in lex_fields.keys():
-                        continue
-                    else:
-                        lex_fields[field.name] = {'label': None}
-
-            logging.info("Lexical fields collected from mixtures, writing to lexicanum.yml")
-            # Write to a YAML file
-            with open('lexicanum.yml', 'w') as file:
-                yaml.dump(lex_fields, file, sort_keys=True)
-
-            from looker_loader.models.lex import Lex
-            parsed_lex = Lex(lex_fields)
+        if self.args.lex:
+            self._load_lexicanum(mixtures)
 
         for m in mixtures:
             mixture = m.get("mixture")
             config = m.get("config")
             table_group = m.get("table_group")
 
-            if args.lex:
-                mixture = self.mixer.lexicalize(mixture, parsed_lex)
+            if self.args.lex:
+                mixture = self.mixer.lexicalize(mixture, self.lexicanum)
 
             views, explore = self.lookml.generate(
                 model=mixture,
                 config=config,
             )
             self._write_lookml_file(
-                output_dir=f'{args.output_dir}/{table_group}',
+                output_dir=f'{self.args.output_dir}/{table_group}',
                 file_path=f'{config.prefix_files}{mixture.name}{config.suffix_files}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )

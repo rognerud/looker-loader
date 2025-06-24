@@ -212,7 +212,7 @@ class RecipeMixer:
         fields = []
         for field in mixture.fields:
             if field.name in lex.root:
-                logging.info(f"Applying lexical rules to field: {field.name}")
+                logging.debug(f"Applying lexical rules to field: {field.name}")
                 updated_field = self._combine_dicts(
                     field.model_dump(), lex.root[field.name].model_dump(),
                     conflict_resolution="last"
