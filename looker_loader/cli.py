@@ -198,20 +198,21 @@ class Cli:
             config = schema_object.get("config")
 
             mixture = self.mixer.mixturize(schema, config=config)
-            mixtures.append({"mixture":mixture, "config": config})
+            mixtures.append({"mixture":mixture, "config": config, "table_group": schema.table_group})
 
         # insert lexical parsing and interaction with lexicanum here.
 
         for m in mixtures:
             mixture = m.get("mixture")
             config = m.get("config")
+            table_group = m.get("table_group")
 
             views, explore = self.lookml.generate(
                 model=mixture,
                 config=config,
             )
             self._write_lookml_file(
-                output_dir=f'{args.output_dir}/{schema.table_group}',
+                output_dir=f'{args.output_dir}/{table_group}',
                 file_path=f'{config.prefix_files}{mixture.name}{config.suffix_files}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )

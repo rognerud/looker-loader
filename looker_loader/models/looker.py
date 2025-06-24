@@ -66,6 +66,7 @@ class LookerMeasure(LookerViewElement):
 
     # Required fields
     type: LookerMeasureType
+    group_item_label: Optional[str] = Field(default=None)
 
     # Fields specific to certain measure types
     approximate: Optional[Union[bool, str]] = None  # For count_distinct

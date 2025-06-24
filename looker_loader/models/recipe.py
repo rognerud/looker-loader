@@ -73,7 +73,8 @@ class LookerMixtureMeasure(LookerMeasure):
             values["group_label"] = ji2("group_label", values)
         if values.get("description") is not None:
             values["description"] = ji2("description", values)
-
+        if values.get("group_item_label") is None:
+            values["group_item_label"] = ji2("group_item_label", values)
 
         if values.get("sql") is None:
             values["sql"] = f"${{{values.get("parent_name")}}}"
@@ -119,7 +120,6 @@ class LookerMixtureDimension(LookerRecipeDimension):
     def fix_name(cls, values):
         if values.get("suffix") is not None:
 
-            jinja_env = Environment()
             if values.get("sql") is not None:
                 values["sql"] = ji2("sql", values)
             if values.get("html") is not None:
@@ -130,6 +130,8 @@ class LookerMixtureDimension(LookerRecipeDimension):
                 values["group_label"] = ji2("group_label", values)
             if values.get("description") is not None:
                 values["description"] = ji2("description", values)
+            if values.get("group_item_label") is None:
+                values["group_item_label"] = ji2("group_item_label", values)
 
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
             if values.get("remove") != "":
