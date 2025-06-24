@@ -5,27 +5,32 @@ import re
 def fix_multiline_indentation(text, indent_size=2):
     lines = text.split('\n')
     fixed_lines = []
-    inside_multiline_string = False
+
+    multiline_keys = ['html', 'sql', 'description']  # add more keys as needed
+    inside_multiline = False
     current_indent = ""
 
-    for line in lines:
+    for i, line in enumerate(lines):
         stripped = line.lstrip()
         leading_spaces = ' ' * (len(line) - len(stripped))
 
-        # If not currently inside a multiline string
-        if not inside_multiline_string:
+        # Check if starting a multiline field
+        if not inside_multiline:
             fixed_lines.append(line)
-            # Check if a string starts but does not end on the same line
-            quote_starts = stripped.count('"') % 2 == 1
-            if quote_starts:
-                inside_multiline_string = True
-                current_indent = leading_spaces + (' ' * indent_size)
+
+            for key in multiline_keys:
+                if re.match(rf'^{key}:\s*<[^>]*>?$', stripped) or stripped.startswith(f"{key}:") and not stripped.endswith(';;'):
+                    inside_multiline = True
+                    current_indent = leading_spaces + ' ' * indent_size
+                    break
+
         else:
-            # Inside a multiline string
-            fixed_lines.append(current_indent + stripped)
-            # Check if string ends on this line
-            if stripped.count('"') % 2 == 1:
-                inside_multiline_string = False
+            # Check if the multiline block has ended
+            if stripped.strip().endswith(';;'):
+                fixed_lines.append(current_indent + stripped)
+                inside_multiline = False
+            else:
+                fixed_lines.append(current_indent + stripped)
 
     return '\n'.join(fixed_lines)
 
