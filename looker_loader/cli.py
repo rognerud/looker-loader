@@ -2,6 +2,7 @@ import argparse
 import os
 import logging
 import lkml
+import re
 from rich.logging import RichHandler
 from looker_loader.utils import FileHandler
 from looker_loader.models.recipe import CookBook
@@ -23,8 +24,10 @@ class Cli:
     """
 
     def __init__(self):
+        self.DEFAULT_LOOKML_OUTPUT_DIR = "output"
         self._args_parser = self._init_argparser()
         self._file_handler = FileHandler()
+
 
     def _init_argparser(self):
         """Create and configure the argument parser"""
@@ -43,7 +46,7 @@ class Cli:
         )
         parser.add_argument(
             "--config",
-            help="Path to the config file",
+            help="Path to the config files",
             type=str,
             default=".",
         )
@@ -52,12 +55,12 @@ class Cli:
         #     action="version",
         #     version=f'looker-loader {version("looker-loader")}',
         # )
-        # parser.add_argument(
-        #     "--output-dir",
-        #     help="Path to a directory that will contain the generated lookml files",
-        #     default=self.DEFAULT_LOOKML_OUTPUT_DIR,
-        #     type=str,
-        # )
+        parser.add_argument(
+            "--output-dir","-o",
+            help="Path to a directory that will contain the generated lookml files",
+            default=self.DEFAULT_LOOKML_OUTPUT_DIR,
+            type=str,
+        )
         return parser
 
     def _write_lookml_file(
@@ -67,7 +70,7 @@ class Cli:
         contents: str,
     ) -> str:
         """Write LookML content to a file."""
-
+        logging.debug(f"Writing LookML file to {file_path}")
         file_name = os.path.basename(file_path)
         file_path = os.path.join(output_dir, file_path.split(file_name)[0])
         os.makedirs(file_path, exist_ok=True)
@@ -109,19 +112,41 @@ class Cli:
         process_list = []
 
         for d in self.config.bigquery:
+            if not d.project_id or not d.dataset_id:
+                raise ValueError(
+                    f"Project ID and Dataset ID are required for BigQuery configuration: {d}"
+                )
+            
             if not d.tables:
-                logging.info(f"Finding all tables in dataset {d.dataset_id} of project {d.project_id}")
+                logging.info("Finding all tables in dataset %s", d.dataset_id)
                 tables = self.database.get_tables_in_dataset(d.project_id, d.dataset_id)
             else:
                 tables = d.tables
 
             for table in tables:
-                
+                if d.config.regex_include:
+                    if re.search(
+                        d.config.regex_include,
+                        table,
+                    ) is None:
+                        logging.debug(
+                            f"Table {table} excluded by regex {d.config.regex_include}")
+                        continue
+                if d.config.regex_exclude:
+                    if re.search(
+                        d.config.regex_exclude,
+                        table,
+                    ) is not None:
+                        logging.debug(
+                            f"Table {table} excluded by regex {d.config.regex_exclude}")
+                        continue
+
                 process_list.append(
                     {
                         "project_id": d.project_id,
                         "dataset_id": d.dataset_id,
                         "table_id": table,
+                        "config": d.config
                     }
                 )
 
@@ -133,12 +158,12 @@ class Cli:
             and parse them into a common database schema
             and store them in self.schemas
         """
-        self.database.init()
         tasks = [
             self.database._async_fetch_table_schema(
             project_id=table.get("project_id"),
             dataset_id=table.get("dataset_id"),
             table_id=table.get("table_id"),
+            config=table.get("config")
             )
             for table in self.tables
             ]
@@ -147,8 +172,8 @@ class Cli:
         results = await asyncio.gather(*tasks)
 
         schemas = []
-        for json in results:
-            schemas.append(self.database._parse_schema(json))
+        for r in results:
+            schemas.append({"schema":self.database._parse_schema(r[0]), "config": r[1]})
 
         self.schemas = schemas
 
@@ -156,58 +181,39 @@ class Cli:
         """Run the CLI"""
         args = self._args_parser.parse_args()
         self.database = BigQueryDatabase()
+        self.database.init()
+
         self.lookml = LookmlGenerator(cli_args=args)
 
         self._load_recipe()
         self._load_config()
         self._load_tables()
 
+        # retrieve the schemas of the tables
         asyncio.run(self.get_schemas())
 
         mixtures = []
-        for schema in self.schemas:
-            logging.debug(f"Generating LookML for '{schema.name}'")
+        for schema_object in self.schemas:
+            schema = schema_object.get("schema")
+            config = schema_object.get("config")
 
-            mixture = self.mixer.mixturize(schema)
-            mixtures.append(mixture)
-        
-        from looker_loader.tools.label_gatherer import gather_field_names, group_strings_by_similarity
-        import json
-        from looker_loader.exceptions import CliError
-        from looker_loader.tools.llm import get_field_label
+            mixture = self.mixer.mixturize(schema, config=config)
+            mixtures.append({"mixture":mixture, "config": config, "table_group": schema.table_group})
 
-        try:
-            lexicanum = self._file_handler.read(f"lexicanum.json", file_type="json")
-        except CliError:
-            logging.warning("lexicanum.json not found")
-            lexicanum = {}
-        
-        field_names = gather_field_names(mixtures)
-        for field_name in field_names:
-            if field_name not in lexicanum:
-                logging.info(f"Adding field '{field_name}' to lexicanum")
-                lexicanum[field_name] = None
+        # insert lexical parsing and interaction with lexicanum here.
 
-        from rich import print 
-        print(group_strings_by_similarity(field_names, group_size=20, similarity_threshold=0.3))
-
-        for field, label in lexicanum.items():
-            if label is None:
-                logging.info(f"Generating label for field '{field}'")
-                lexicanum[field] = get_field_label(field_name=field)
-
-        self._file_handler.write("lexicanum.json", json.dumps(lexicanum, indent=2))
-
-
-        for mixture in mixtures:
+        for m in mixtures:
+            mixture = m.get("mixture")
+            config = m.get("config")
+            table_group = m.get("table_group")
 
             views, explore = self.lookml.generate(
                 model=mixture,
+                config=config,
             )
-
             self._write_lookml_file(
-                output_dir=f'output/{schema.table_group}',
-                file_path=f'{schema.name}.view.lkml',
+                output_dir=f'{args.output_dir}/{table_group}',
+                file_path=f'{config.prefix_files}{mixture.name}{config.suffix_files}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )
 

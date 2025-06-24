@@ -5,13 +5,43 @@ from looker_loader.models.looker import (
     LookerDimension,
 )
 from looker_loader.enums import LookerType
-
+from jinja2 import Environment
+import re
+import logging
 # Models for loading recipes, and for generating looker data from the combination of 
 # the database and the recipes
+
+def ji2(search, values):
+    """Jinja2 render function"""
+    jinja_env = Environment()
+    target = values.get(search, None)
+    if target is None:
+        return target
+    else:
+        pre = preprocess_jinja(target)
+        jinjaed = jinja_env.from_string(pre).render(values)
+        post = postprocess_jinja(jinjaed)
+        logging.debug(f"Jinja2 Rendered {search}: {post}")
+        return post
+
+def preprocess_jinja(input_str):
+    """ if string contains {{{}}} convert it to { {{}} }"""
+    if input_str is not None:
+        input_str = input_str.replace("{{{", "{ {{").replace("}}}", "}} }")
+        # print(f"Preprocessed Jinja: {input_str}")
+    return input_str
+
+def postprocess_jinja(input_str):
+    """ if string contains ${ value } convert it to ${value} *any amount of whitespace allowed*"""
+    if input_str is not None:
+        input_str = re.sub(r'\$\s*\{\s*([^\}]+?)\s*\}', r'${\1}', input_str)
+        # print(f"Postprocessed Jinja: {input_str}")
+    return input_str
 
 class LookerRecipeDerivedDimension(LookerDimension):
     """A derived dimension in Looker"""
     suffix: str
+    remove: Optional[str] = ""
     sql: Optional[str] = None
     html: Optional[str] = None
     measures: Optional[List[LookerMeasure]] = None
@@ -32,6 +62,20 @@ class LookerMixtureMeasure(LookerMeasure):
     @model_validator(mode="before")
     def fix_name(cls, values):
         values["name"] = f"m_{values.get('type')}_{values.get('parent_name')}"
+
+        if values.get("sql") is not None:
+            values["sql"] = ji2("sql", values)
+        if values.get("html") is not None:
+            values["html"] =  ji2("html", values)
+        if values.get("label") is not None:
+            values["label"] = ji2("label", values)
+        if values.get("group_label") is not None:
+            values["group_label"] = ji2("group_label", values)
+        if values.get("description") is not None:
+            values["description"] = ji2("description", values)
+        if values.get("group_item_label") is None:
+            values["group_item_label"] = ji2("group_item_label", values)
+
         if values.get("sql") is None:
             values["sql"] = f"${{{values.get("parent_name")}}}"
         if values.get("group_label") is None:
@@ -60,14 +104,14 @@ class LookerMixtureDimension(LookerRecipeDimension):
         if values.get("measures") is not None:
             inherited_children = []
             for child in values.get("measures", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
                 inherited_children.append(child)
             values["measures"] = inherited_children
 
         if values.get("variants") is not None:
             inherited_children = []
             for child in values.get("variants", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags"])
+                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
                 inherited_children.append(child)
             values["variants"] = inherited_children
         return values
@@ -75,13 +119,28 @@ class LookerMixtureDimension(LookerRecipeDimension):
     @model_validator(mode="before")
     def fix_name(cls, values):
         if values.get("suffix") is not None:
+
+            if values.get("sql") is not None:
+                values["sql"] = ji2("sql", values)
+            if values.get("html") is not None:
+                values["html"] = ji2("html", values)
+            if values.get("label") is not None:
+                values["label"] = ji2("label", values)
+            if values.get("group_label") is not None:
+                values["group_label"] = ji2("group_label", values)
+            if values.get("description") is not None:
+                values["description"] = ji2("description", values)
+            if values.get("group_item_label") is None:
+                values["group_item_label"] = ji2("group_item_label", values)
+
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
+            if values.get("remove") != "":
+                values["name"] = values["name"].replace(values.get("remove"), "")
             if values.get("group_label") is None:
                 values["group_label"] = values.get("parent_group_label")
             if values.get("description") is None:
                 values["description"] = f"derived {values.get('suffix')} of {values.get("parent_name")} : {values.get("parent_description")}"
-            values["type"] = values.get("parent_type", "string")
-            values["sql"] = values.get("sql").replace("$x", f"${{{values.get('parent_name')}}}")
+            values["type"] = values.get("parent_type", values.get("type", "string"))
         return values
 
 class LookerMixture(BaseModel):

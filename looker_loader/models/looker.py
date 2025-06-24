@@ -1,7 +1,7 @@
 from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 import warnings
-from looker_loader.enums import LookerType, LookerDateTimeframes, LookerTimeTimeframes
+from looker_loader.enums import LookerType,LookerDataType, LookerDateTimeframes, LookerTimeTimeframes
 
 from looker_loader.enums import (
     LookerType,
@@ -31,7 +31,7 @@ class LookerViewElement(BaseModel):
         None
     ]] = None
     label: Optional[str] = None
-    hidden: Optional[bool] = None
+    hidden: Optional[Union[bool, str]] = None
     description: Optional[str] = None
     tags: Optional[List[str]] = None
 
@@ -66,9 +66,10 @@ class LookerMeasure(LookerViewElement):
 
     # Required fields
     type: LookerMeasureType
+    group_item_label: Optional[str] = Field(default=None)
 
     # Fields specific to certain measure types
-    approximate: Optional[bool] = None  # For count_distinct
+    approximate: Optional[Union[bool, str]] = None  # For count_distinct
     approximate_threshold: Optional[int] = None  # For count_distinct
     precision: Optional[int] = None  # For average, sum
     sql_distinct_key: Optional[str] = None  # For count_distinct
@@ -76,6 +77,14 @@ class LookerMeasure(LookerViewElement):
     required_access_grants: Optional[List[str]] = Field(default=None)
     filters: Optional[List[LookerMeasureFilter]] = None
     sql: Optional[str] = None  # SQL expression for the measure
+
+    @field_validator("hidden", "approximate", mode="after")
+    @classmethod
+    def bool_to_yesno(cls, value):
+        """Convert boolean values to 'yes'/'no' strings."""
+        if isinstance(value, bool):
+            return "yes" if value else "no"
+        return value
 
     @model_validator(mode="before")
     def validate_measure_attributes(cls, values):
@@ -112,6 +121,16 @@ class LookerMeasure(LookerViewElement):
                 )
 
         return values
+    
+
+    @field_validator("name", mode="after")
+    @classmethod
+    def remove_dots_from_name(cls, value):
+        """Remove dots from the name of the dimension."""
+        if value is not None:
+            return value.replace(".", "__")
+        return value
+
 
 class LookerDimension(LookerViewElement):
     """Looker-specific data for a dimension on a model column
@@ -124,46 +143,36 @@ class LookerDimension(LookerViewElement):
     convert_tz: Optional[Union[str, bool]] = Field(default=None)
     timeframes: Optional[List[str]] = Field(default=None)
     can_filter: Optional[Union[bool, str]] = Field(default=None)
+    datatype: Optional[LookerDataType] = Field(default=None)
     group_item_label: Optional[str] = Field(default=None)
     order_by_field: Optional[str] = Field(default=None)
-    suggestable: Optional[bool] = Field(default=None)
-    case_sensitive: Optional[bool] = Field(default=None)
-    allow_fill: Optional[bool] = Field(default=None)
+    suggestable: Optional[Union[bool, str]] = Field(default=None)
+    case_sensitive: Optional[Union[bool, str]] = Field(default=None)
+    full_suggestions: Optional[Union[bool, str]] = Field(default=None)
+    allow_fill: Optional[Union[bool, str]] = Field(default=None)
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[str] = Field(default=None)
     sql: Optional[str] = None
     # fields: Optional[List['LookerDimension']] = None
 
 
-    # @field_validator("timeframes", mode="before")
-    # def check_enums(cls, values):
-    #     if values is not None:
-    #         if isinstance(values, list[str]):
-    #             timeframes = values
-    #             valid_timeframes = [
-    #                 tf for tf in timeframes if isinstance(tf, LookerTimeFrame)
-    #             ]
-    #             if len(valid_timeframes) < len(timeframes):
-    #                 invalid_timeframes = set(timeframes) - set(valid_timeframes)
-    #                 warnings.warn(
-    #                     f"Invalid timeframes: {invalid_timeframes}. "
-    #                 )
-    #                 values["timeframes"] = valid_timeframes
-
-    #     return values
-
-
 class ValidatedLookerDimension(LookerDimension):
     """Looker data for a dimension with validation."""
 
-    @field_validator("convert_tz", "hidden", "primary_key", mode="after")
+    @field_validator("name", mode="after")
+    @classmethod
+    def remove_dots_from_name(cls, value):
+        """Remove dots from the name of the dimension."""
+        if value is not None:
+            return value.replace(".", "__")
+        return value
+    
+    @field_validator("primary_key", "convert_tz", "can_filter", "hidden", "case_sensitive", "full_suggestions", "allow_fill", mode="after")
     @classmethod
     def bool_to_yesno(cls, value):
+        """Convert boolean values to 'yes'/'no' strings."""
         if isinstance(value, bool):
-            if value:
-                return "yes"
-            else:
-                return "no"
+            return "yes" if value else "no"
         return value
 
 class ValidatedLookerDimensionGroup(LookerDimension):
@@ -177,8 +186,10 @@ class ValidatedLookerDimensionGroup(LookerDimension):
         ):
             # Convert to dimension group
             values["type"] = "time"
-            values["timeframes"] = LookerDateTimeframes.str_values()
+            values["timeframes"] = LookerDateTimeframes.str_values() if values.get("timeframes") is None else values.get("timeframes")
             values["convert_tz"] = False
+            # if set use, else use default
+            values["datatype"] = "date" if values.get("datatype") is None else values["datatype"]
 
         elif values.get("type") in (
             "datetime",
@@ -186,19 +197,39 @@ class ValidatedLookerDimensionGroup(LookerDimension):
         ):
             # Convert to dimension group
             values["type"] = "time"
-            values["timeframes"] = LookerTimeTimeframes.str_values()
+            values["timeframes"] = LookerTimeTimeframes.str_values() if values.get("timeframes") is None else values.get("timeframes")
             values["convert_tz"] = True
 
         return values
 
-    @field_validator("convert_tz", "hidden", mode="after")
+    @field_validator("primary_key", "convert_tz", "can_filter", "hidden", "case_sensitive", "full_suggestions", "allow_fill", mode="after")
     @classmethod
     def bool_to_yesno(cls, value):
+        """Convert boolean values to 'yes'/'no' strings."""
         if isinstance(value, bool):
-            if value:
-                return "yes"
-            else:
-                return "no"
+            return "yes" if value else "no"
+        return value
+
+    @field_validator("name", mode="after")
+    @classmethod
+    def remove_dots_from_name(cls, value):
+        """Remove dots from the name of the dimension."""
+        if value is not None:
+            value = value.replace(".", "__")
+        # Remove the last part after the underscore if it exists
+        if "_" in value:
+            value = value.rsplit("_", 1)[0]
+        return value
+    
+class ValidatedLookerMeasure(LookerMeasure):
+    """Looker data for a measure with validation."""
+
+    @field_validator("sql", mode="after")
+    @classmethod
+    def remove_dots_from_name(cls, value):
+        """Remove dots from the name of the dimension."""
+        if value is not None:
+            return value.replace(".", "__")
         return value
 
 class LookerView(BaseModel):
@@ -210,7 +241,7 @@ class LookerView(BaseModel):
 
     dimensions: Optional[List[ValidatedLookerDimension]] = Field(default=None)
     dimension_groups: Optional[List[ValidatedLookerDimensionGroup]] = Field(default=None)
-    measures: Optional[List[LookerMeasure]] = Field(default=None)
+    measures: Optional[List[ValidatedLookerMeasure]] = Field(default=None)
 
     @model_validator(mode="before")
     def handle_time_and_dates(cls, values):
