@@ -134,7 +134,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
                 values["group_item_label"] = ji2("group_item_label", values)
 
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
-            if values.get("remove") != "":
+            if values.get("remove") != "" and values.get("remove") is not None:
                 values["name"] = values["name"].replace(values.get("remove"), "")
             if values.get("group_label") is None:
                 values["group_label"] = values.get("parent_group_label")

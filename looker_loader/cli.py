@@ -37,7 +37,7 @@ class Cli:
         )
 
         parser.set_defaults(
-            build_explore=True, write_output=True, hide_arrays_and_structs=True
+            llm=False, lex=False
         )
         parser.add_argument(
             "--table","-t",
@@ -49,6 +49,18 @@ class Cli:
             help="Path to the config files",
             type=str,
             default=".",
+        )
+        parser.add_argument(
+            "--lex",
+            help="Use lexicanum to generate LookML",
+            action="store_true",
+            default=False,
+        )
+        parser.add_argument(
+            "--llm",
+            help="Use a LLM to generate labels in lexicanum",
+            action="store_true",
+            default=False,
         )
         # parser.add_argument(
         #     "--version",
@@ -201,11 +213,39 @@ class Cli:
             mixtures.append({"mixture":mixture, "config": config, "table_group": schema.table_group})
 
         # insert lexical parsing and interaction with lexicanum here.
+        if args.lex:
+            import yaml
+            logging.info("Lexicanum is enabled")
+            try:
+                with open('lexicanum.yml', 'r') as file:
+                    lex_fields = yaml.safe_load(file)
+            except FileNotFoundError:
+                logging.warning("lexicanum.yml file not found. Creating..")
+                lex_fields = {}
+
+            for m in mixtures:
+                mixture = m.get("mixture")
+                for field in mixture.fields:
+                    if field.name in lex_fields.keys():
+                        continue
+                    else:
+                        lex_fields[field.name] = {'label': None}
+
+            logging.info("Lexical fields collected from mixtures, writing to lexicanum.yml")
+            # Write to a YAML file
+            with open('lexicanum.yml', 'w') as file:
+                yaml.dump(lex_fields, file, sort_keys=True)
+
+            from looker_loader.models.lex import Lex
+            parsed_lex = Lex(lex_fields)
 
         for m in mixtures:
             mixture = m.get("mixture")
             config = m.get("config")
             table_group = m.get("table_group")
+
+            if args.lex:
+                mixture = self.mixer.lexicalize(mixture, parsed_lex)
 
             views, explore = self.lookml.generate(
                 model=mixture,

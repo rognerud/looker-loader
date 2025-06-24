@@ -188,8 +188,6 @@ class RecipeMixer:
             d.fields = []
             for f in field.fields:
                 r = self._recursively_apply_mixture(f, config)
-                # if len(r) > 1:
-                #     logging.info(r)
                 d.fields.extend(r)
 
         result = [d]
@@ -198,6 +196,37 @@ class RecipeMixer:
         elif isinstance(v, LookerMixtureDimension):
             result.append(v)
         return result
+
+    def lexicalize(self, mixture: LookerMixture, lex) -> LookerMixture:
+        """
+        Apply lexical rules to the mixture.
+        """
+        if not lex:
+            logging.error("Lexical rules are not provided")
+            raise Exception("Lexical rules are not provided")
+
+        if not mixture.fields:
+            logging.error("No fields found in mixture")
+            raise Exception("No fields found in mixture")
+        
+        fields = []
+        for field in mixture.fields:
+            if field.name in lex.root:
+                logging.info(f"Applying lexical rules to field: {field.name}")
+                updated_field = self._combine_dicts(
+                    field.model_dump(), lex.root[field.name].model_dump(),
+                    conflict_resolution="last"
+                )
+                fields.append(updated_field)
+            else:
+                fields.append(field.model_dump())
+
+        model = LookerMixture(**{
+            "name": mixture.name,
+            "sql_table_name": mixture.sql_table_name,
+            "fields": fields,
+        })
+        return model
 
     def mixturize(self, table: DatabaseTable, config) -> LookerMixture:
         """
