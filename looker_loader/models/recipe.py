@@ -82,6 +82,8 @@ class LookerMixtureMeasure(LookerMeasure):
             values["group_label"] = values.get("parent_group_label")
         if values.get("description") is None:
             values["description"] = f"{values.get('type')} of {values.get("parent_name")} : {values.get("parent_description")}"
+        if values.get("value_format_name") is None:
+            values["value_format_name"] = values.get("parent_value_format_name")
         return values
 
 class LookerMixtureDimension(LookerRecipeDimension):
@@ -95,23 +97,24 @@ class LookerMixtureDimension(LookerRecipeDimension):
     @model_validator(mode="before")
     def create(cls, values):
 
-        def apply(field : dict, list_params : List[str]):
+        def push_down(field : dict, list_params : List[str]):
             for param in list_params:
-                if field.get(param) is None:
-                    field[f"parent_{param}"] = values.get(param)
+                field[f"parent_{param}"] = values.get(param)
+                if param == "label":
+                    field[f"parent_{param}"] = values.get(param) if values.get(param) else values.get("name")
             return field
 
         if values.get("measures") is not None:
             inherited_children = []
             for child in values.get("measures", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
+                child = push_down(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name", "label"])
                 inherited_children.append(child)
             values["measures"] = inherited_children
 
         if values.get("variants") is not None:
             inherited_children = []
             for child in values.get("variants", []):
-                child = apply(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name"])
+                child = push_down(child, ["name", "sql", "type", "group_label", "description", "tags", "value_format_name", "label"])
                 inherited_children.append(child)
             values["variants"] = inherited_children
         return values
@@ -140,6 +143,8 @@ class LookerMixtureDimension(LookerRecipeDimension):
                 values["group_label"] = values.get("parent_group_label")
             if values.get("description") is None:
                 values["description"] = f"derived {values.get('suffix')} of {values.get("parent_name")} : {values.get("parent_description")}"
+            if values.get("value_format_name") is None:
+                values["value_format_name"] = values.get("parent_value_format_name", "string")
             values["type"] = values.get("parent_type", values.get("type", "string"))
         return values
 
@@ -156,6 +161,7 @@ class RecipeFilter(BaseModel):
     """a filter for a recipe"""
 
     type: Optional[LookerType] = None
+    db_type: Optional[str] = None
     regex_include: Optional[str] = None
     regex_exclude: Optional[str] = None
     tags: Optional[List[str]] = None

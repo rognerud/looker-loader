@@ -24,6 +24,13 @@ recipes:
       value_format_name: decimal_1
       measures:
         - type: sum
+          label: "Sum {{ parent_label }}"
+
+  - name: hide_record
+    filters:
+      db_type: RECORD
+    dimension:
+      hidden: true
 
   - name: time_second_values
     filters:

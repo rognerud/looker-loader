@@ -25,8 +25,9 @@ def remove_nones(data):
         return data  # Return non-None values as is
 
 class RecipeMixer:
-    def __init__(self, cookbook: CookBook):
+    def __init__(self, cookbook: CookBook, lexicanum = None):
         self.cookbook = cookbook
+        self.lexicanum = lexicanum
 
     def is_filter_relevant(
         self, filter: RecipeFilter, field: DatabaseField
@@ -37,6 +38,7 @@ class RecipeMixer:
 
         return all([
             not filter.type or filter.type == field.type,
+            not filter.db_type or filter.db_type == field.db_type,
             not filter.regex_include or re.search(filter.regex_include, field.name),
             not filter.regex_exclude or not re.search(filter.regex_exclude, field.name),
             not filter.tags or any(tag in filter.tags for tag in field.tags),
@@ -58,6 +60,13 @@ class RecipeMixer:
             recipe.dimension.model_dump() for recipe in self.cookbook.recipes
             if self.is_filter_relevant(recipe.filters, field)
         ]
+
+        if self.lexicanum:
+            if field.name in self.lexicanum.root:
+                relevant_lexical_entry = self.lexicanum.root[field.name].model_dump()
+                if relevant_lexical_entry:
+                    relevant_recipes.append(relevant_lexical_entry)
+
         if not relevant_recipes:
             return None
         else:
@@ -197,36 +206,36 @@ class RecipeMixer:
             result.append(v)
         return result
 
-    def lexicalize(self, mixture: LookerMixture, lex) -> LookerMixture:
-        """
-        Apply lexical rules to the mixture.
-        """
-        if not lex:
-            logging.error("Lexical rules are not provided")
-            raise Exception("Lexical rules are not provided")
+    # def lexicalize(self, mixture: LookerMixture, lex) -> LookerMixture:
+    #     """
+    #     Apply lexical rules to the mixture.
+    #     """
+    #     if not lex:
+    #         logging.error("Lexical rules are not provided")
+    #         raise Exception("Lexical rules are not provided")
 
-        if not mixture.fields:
-            logging.error("No fields found in mixture")
-            raise Exception("No fields found in mixture")
+    #     if not mixture.fields:
+    #         logging.error("No fields found in mixture")
+    #         raise Exception("No fields found in mixture")
         
-        fields = []
-        for field in mixture.fields:
-            if field.name in lex.root:
-                logging.debug(f"Applying lexical rules to field: {field.name}")
-                updated_field = self._combine_dicts(
-                    field.model_dump(), lex.root[field.name].model_dump(),
-                    conflict_resolution="last"
-                )
-                fields.append(updated_field)
-            else:
-                fields.append(field.model_dump())
+    #     fields = []
+    #     for field in mixture.fields:
+    #         if field.name in lex.root:
+    #             logging.debug(f"Applying lexical rules to field: {field.name}")
+    #             updated_field = self._combine_dicts(
+    #                 field.model_dump(), lex.root[field.name].model_dump(),
+    #                 conflict_resolution="last"
+    #             )
+    #             fields.append(updated_field)
+    #         else:
+    #             fields.append(field.model_dump())
 
-        model = LookerMixture(**{
-            "name": mixture.name,
-            "sql_table_name": mixture.sql_table_name,
-            "fields": fields,
-        })
-        return model
+    #     model = LookerMixture(**{
+    #         "name": mixture.name,
+    #         "sql_table_name": mixture.sql_table_name,
+    #         "fields": fields,
+    #     })
+    #     return model
 
     def mixturize(self, table: DatabaseTable, config) -> LookerMixture:
         """

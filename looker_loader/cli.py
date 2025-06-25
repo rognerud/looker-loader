@@ -30,6 +30,8 @@ class Cli:
         self._args_parser = self._init_argparser()
         self._file_handler = FileHandler()
         self.args = self._args_parser.parse_args()
+        self.lexicanum = None
+        self.recipe = None
 
 
     def _init_argparser(self):
@@ -108,7 +110,6 @@ class Cli:
         logging.info(f"Loading Recipe from {folder}/loader_recipe.yml")
         data = self._file_handler.read(f"{folder}/loader_recipe.yml", file_type="yaml")
         self.recipe = CookBook(**data)
-        self.mixer = recipe_mixer.RecipeMixer(self.recipe)
 
     def _load_config(self, folder: str = None):
         """Load the config from a yaml file"""
@@ -167,19 +168,19 @@ class Cli:
 
         self.tables = process_list
 
-    def _load_lexicanum(self, mixtures):
+    def _load_lexicanum(self):
         """Load the lexicanum from a yaml file"""
-        logging.info("Lexicanum is enabled. Collecting lexical fields from mixtures...")
         try:
             with open('lexicanum.yml', 'r') as file:
                 lex_fields = yaml.safe_load(file)
         except FileNotFoundError:
             logging.warning("lexicanum.yml file not found. Creating..")
             lex_fields = {}
+        logging.info("Lexicanum is enabled. Collecting lexical fields from schemas...")
 
-        for m in mixtures:
-            mixture = m.get("mixture")
-            for field in mixture.fields:
+        for m in self.schemas:
+            schema = m.get("schema")
+            for field in schema.fields:
                 if field.name in lex_fields.keys():
                     continue
                 else:
@@ -217,6 +218,10 @@ class Cli:
 
         self.schemas = schemas
 
+    def _initialize_mixer(self):
+        """Initialize the LookerMixture objects for each schema"""
+        self.mixer = recipe_mixer.RecipeMixer(self.recipe, self.lexicanum)
+
     def run(self):
         """Run the CLI"""
         self.database = BigQueryDatabase()
@@ -231,6 +236,11 @@ class Cli:
         # retrieve the schemas of the tables
         asyncio.run(self.get_schemas())
 
+        if self.args.lex:
+            self._load_lexicanum()
+
+        self._initialize_mixer()
+
         mixtures = []
         for schema_object in self.schemas:
             schema = schema_object.get("schema")
@@ -239,16 +249,10 @@ class Cli:
             mixture = self.mixer.mixturize(schema, config=config)
             mixtures.append({"mixture":mixture, "config": config, "table_group": schema.table_group})
 
-        if self.args.lex:
-            self._load_lexicanum(mixtures)
-
         for m in mixtures:
             mixture = m.get("mixture")
             config = m.get("config")
             table_group = m.get("table_group")
-
-            if self.args.lex:
-                mixture = self.mixer.lexicalize(mixture, self.lexicanum)
 
             views, explore = self.lookml.generate(
                 model=mixture,
