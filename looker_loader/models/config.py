@@ -36,6 +36,16 @@ class DatasetConfig(BaseModel):
         description="Whether to create unstyled views for the dataset"
     )
 
+class LoaderConfig(BaseModel):
+    """Loader configuration model for Looker Loader"""
+    lexicanum: Optional[bool] = Field(
+        default=False,
+        description="Whether to use lexicanum for loading Looker data"
+    )
+    output_path: Optional[str] = Field(
+        default="./output",
+        description="Path where the Looker data will be output"
+    )
 
 class BigQuery(BaseModel):
     """BigQuery model for Looker Loader"""
@@ -47,3 +57,6 @@ class BigQuery(BaseModel):
 class Config(BaseModel):
     """Config model for Looker Loader"""
     bigquery: List[BigQuery]
+    loader: Optional[LoaderConfig] = Field(
+        default_factory=LoaderConfig,
+    )

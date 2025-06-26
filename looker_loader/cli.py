@@ -31,7 +31,9 @@ class Cli:
         self._file_handler = FileHandler()
         self.args = self._args_parser.parse_args()
         self.lexicanum = None
+        self.use_lexicanum = False
         self.recipe = None
+        self.output_path = None
 
 
     def _init_argparser(self):
@@ -75,7 +77,7 @@ class Cli:
         parser.add_argument(
             "--output-dir","-o",
             help="Path to a directory that will contain the generated lookml files",
-            default=self.DEFAULT_LOOKML_OUTPUT_DIR,
+            default=None,
             type=str,
         )
         return parser
@@ -117,11 +119,15 @@ class Cli:
         if folder is None:
             folder = args.config
         if not os.path.exists(folder):
-            raise FileNotFoundError(f"Folder {folder} does not exist")
+            raise FileNotFoundError(f"Folder {folder} where loader_config.yml is expected does not exist")
 
         logging.info(f"Loading Config from {folder}/loader_config.yml")
         data = self._file_handler.read(f"{folder}/loader_config.yml", file_type="yaml")
         self.config = Config(**data['config'])
+
+        self.output_path = args.output_dir or self.config.loader.output_path or self.DEFAULT_LOOKML_OUTPUT_DIR
+        self.use_lexicanum = args.lex or self.config.loader.lexicanum or False
+
 
     def _load_tables(self):
         """Load the schemas from the database"""
@@ -236,7 +242,7 @@ class Cli:
         # retrieve the schemas of the tables
         asyncio.run(self.get_schemas())
 
-        if self.args.lex:
+        if self.use_lexicanum:
             self._load_lexicanum()
 
         self._initialize_mixer()
@@ -259,7 +265,7 @@ class Cli:
                 config=config,
             )
             self._write_lookml_file(
-                output_dir=f'{self.args.output_dir}/{table_group}',
+                output_dir=f'{self.output_path}/{table_group}',
                 file_path=f'{config.prefix_files}{mixture.name}{config.suffix_files}.view.lkml',
                 contents=convert_to_lkml(views, explore),
             )
