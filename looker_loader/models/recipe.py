@@ -70,8 +70,8 @@ class LookerMixtureMeasure(LookerMeasure):
             values["alias"] = [ji2("alias", values, value=v) for v in values.get("alias")]
         if values.get("sql") is not None:
             values["sql"] = ji2("sql", values)
-        if values.get("html") is not None:
-            values["html"] =  ji2("html", values)
+        # if values.get("html") is not None:
+            # values["html"] =  ji2("html", values)
         if values.get("label") is not None:
             values["label"] = ji2("label", values)
         if values.get("group_label") is not None:
@@ -131,8 +131,8 @@ class LookerMixtureDimension(LookerRecipeDimension):
             values["alias"] = [ji2("alias", values, value=v) for v in values.get("alias")]
         if values.get("sql") is not None:
             values["sql"] = ji2("sql", values)
-        if values.get("html") is not None:
-            values["html"] = ji2("html", values)
+        # if values.get("html") is not None:
+            # values["html"] = ji2("html", values)
         if values.get("label") is not None:
             values["label"] = ji2("label", values)
         if values.get("group_label") is not None:
