@@ -222,8 +222,9 @@ class ValidatedLookerDimensionGroup(LookerDimension):
         # this is not a good idea. Looker conditionally removes the last part _ given specific criteria.
         # for example: event_at becomes event. but happened_at does not become happened.s 
         # That seems like an oversight to me, and not something worth trying to replicate.
-        #if "_" in value:
-        #    value = value.rsplit("_", 1)[0]
+        if "_" in value:
+            if value.rsplit("_", 1)[-1] in ("at", "date"):
+                value = value.rsplit("_", 1)[0]
         return value
     
 class ValidatedLookerMeasure(LookerMeasure):
