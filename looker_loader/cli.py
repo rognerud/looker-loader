@@ -189,7 +189,7 @@ class Cli:
         logging.debug("Lexical fields collected from mixtures, writing to lexicanum.yml")
         # Write to a YAML file
         with open('lexicanum.yml', 'w') as file:
-            yaml.dump(lex_fields, file, sort_keys=True)
+            yaml.dump(lex_fields, file, sort_keys=True, allow_unicode=True)
 
         self.lexicanum = Lex(lex_fields)
 

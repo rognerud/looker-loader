@@ -11,10 +11,13 @@ import logging
 # Models for loading recipes, and for generating looker data from the combination of 
 # the database and the recipes
 
-def ji2(search, values):
+def ji2(search, values, value=None):
     """Jinja2 render function"""
     jinja_env = Environment()
-    target = values.get(search, None)
+    if value is not None:
+        target = value
+    else:
+        target = values.get(search, None)
     if target is None:
         return target
     else:
@@ -63,6 +66,8 @@ class LookerMixtureMeasure(LookerMeasure):
     def fix_name(cls, values):
         values["name"] = f"m_{values.get('type')}_{values.get('parent_name')}"
 
+        if values.get("alias") is not None:
+            values["alias"] = [ji2("alias", values, value=v) for v in values.get("alias")]
         if values.get("sql") is not None:
             values["sql"] = ji2("sql", values)
         if values.get("html") is not None:
@@ -84,6 +89,7 @@ class LookerMixtureMeasure(LookerMeasure):
             values["description"] = f"{values.get('type')} of {values.get("parent_name")} : {values.get("parent_description")}"
         if values.get("value_format_name") is None:
             values["value_format_name"] = values.get("parent_value_format_name")
+        values["type"] = values.get("type", values.get("parent_type", "number"))
         return values
 
 class LookerMixtureDimension(LookerRecipeDimension):
@@ -121,21 +127,22 @@ class LookerMixtureDimension(LookerRecipeDimension):
 
     @model_validator(mode="before")
     def fix_name(cls, values):
+        if values.get("alias") is not None:
+            values["alias"] = [ji2("alias", values, value=v) for v in values.get("alias")]
+        if values.get("sql") is not None:
+            values["sql"] = ji2("sql", values)
+        if values.get("html") is not None:
+            values["html"] = ji2("html", values)
+        if values.get("label") is not None:
+            values["label"] = ji2("label", values)
+        if values.get("group_label") is not None:
+            values["group_label"] = ji2("group_label", values)
+        if values.get("description") is not None:
+            values["description"] = ji2("description", values)
+        if values.get("group_item_label") is None:
+            values["group_item_label"] = ji2("group_item_label", values)
+
         if values.get("suffix") is not None:
-
-            if values.get("sql") is not None:
-                values["sql"] = ji2("sql", values)
-            if values.get("html") is not None:
-                values["html"] = ji2("html", values)
-            if values.get("label") is not None:
-                values["label"] = ji2("label", values)
-            if values.get("group_label") is not None:
-                values["group_label"] = ji2("group_label", values)
-            if values.get("description") is not None:
-                values["description"] = ji2("description", values)
-            if values.get("group_item_label") is None:
-                values["group_item_label"] = ji2("group_item_label", values)
-
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
             if values.get("remove") != "" and values.get("remove") is not None:
                 values["name"] = values["name"].replace(values.get("remove"), "")
@@ -145,7 +152,7 @@ class LookerMixtureDimension(LookerRecipeDimension):
                 values["description"] = f"derived {values.get('suffix')} of {values.get("parent_name")} : {values.get("parent_description")}"
             if values.get("value_format_name") is None:
                 values["value_format_name"] = values.get("parent_value_format_name", "string")
-            values["type"] = values.get("parent_type", values.get("type", "string"))
+            values["type"] = values.get("type", values.get("parent_type", "string"))
         return values
 
 class LookerMixture(BaseModel):
@@ -160,8 +167,8 @@ class LookerMixture(BaseModel):
 class RecipeFilter(BaseModel):
     """a filter for a recipe"""
 
-    type: Optional[LookerType] = None
-    db_type: Optional[str] = None
+    types: Optional[List[LookerType]] = None
+    db_types: Optional[List[str]] = None
     regex_include: Optional[str] = None
     regex_exclude: Optional[str] = None
     tags: Optional[List[str]] = None

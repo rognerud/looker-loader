@@ -77,6 +77,7 @@ class LookerMeasure(LookerViewElement):
     required_access_grants: Optional[List[str]] = Field(default=None)
     filters: Optional[List[LookerMeasureFilter]] = None
     sql: Optional[str] = None  # SQL expression for the measure
+    alias: Optional[List[str]] = None
 
     @field_validator("hidden", "approximate", mode="after")
     @classmethod
@@ -153,6 +154,7 @@ class LookerDimension(LookerViewElement):
     required_access_grants: Optional[List[str]] = Field(default=None)
     html: Optional[str] = Field(default=None)
     sql: Optional[str] = None
+    alias: Optional[List[str]] = None
     # fields: Optional[List['LookerDimension']] = None
 
 
@@ -217,8 +219,11 @@ class ValidatedLookerDimensionGroup(LookerDimension):
         if value is not None:
             value = value.replace(".", "__")
         # Remove the last part after the underscore if it exists
-        if "_" in value:
-            value = value.rsplit("_", 1)[0]
+        # this is not a good idea. Looker conditionally removes the last part _ given specific criteria.
+        # for example: event_at becomes event. but happened_at does not become happened.s 
+        # That seems like an oversight to me, and not something worth trying to replicate.
+        #if "_" in value:
+        #    value = value.rsplit("_", 1)[0]
         return value
     
 class ValidatedLookerMeasure(LookerMeasure):

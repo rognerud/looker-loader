@@ -37,8 +37,8 @@ class RecipeMixer:
         """
 
         return all([
-            not filter.type or filter.type == field.type,
-            not filter.db_type or filter.db_type == field.db_type,
+            not filter.types or field.type in filter.types,
+            not filter.db_types or field.db_type in filter.db_types,
             not filter.regex_include or re.search(filter.regex_include, field.name),
             not filter.regex_exclude or not re.search(filter.regex_exclude, field.name),
             not filter.tags or any(tag in filter.tags for tag in field.tags),
@@ -205,37 +205,6 @@ class RecipeMixer:
         elif isinstance(v, LookerMixtureDimension):
             result.append(v)
         return result
-
-    # def lexicalize(self, mixture: LookerMixture, lex) -> LookerMixture:
-    #     """
-    #     Apply lexical rules to the mixture.
-    #     """
-    #     if not lex:
-    #         logging.error("Lexical rules are not provided")
-    #         raise Exception("Lexical rules are not provided")
-
-    #     if not mixture.fields:
-    #         logging.error("No fields found in mixture")
-    #         raise Exception("No fields found in mixture")
-        
-    #     fields = []
-    #     for field in mixture.fields:
-    #         if field.name in lex.root:
-    #             logging.debug(f"Applying lexical rules to field: {field.name}")
-    #             updated_field = self._combine_dicts(
-    #                 field.model_dump(), lex.root[field.name].model_dump(),
-    #                 conflict_resolution="last"
-    #             )
-    #             fields.append(updated_field)
-    #         else:
-    #             fields.append(field.model_dump())
-
-    #     model = LookerMixture(**{
-    #         "name": mixture.name,
-    #         "sql_table_name": mixture.sql_table_name,
-    #         "fields": fields,
-    #     })
-    #     return model
 
     def mixturize(self, table: DatabaseTable, config) -> LookerMixture:
         """
