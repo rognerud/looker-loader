@@ -184,13 +184,24 @@ class Cli:
             lex_fields = {}
         logging.info("Lexicanum is enabled. Collecting lexical fields from schemas...")
 
+        def recurse_fields(fields, lex_fields):
+            """Recursively collect fields from nested structures"""
+            if isinstance(fields, list):  # Ensure 'fields' is a list
+                for field in fields:
+                    if field.name not in lex_fields:
+                        lex_fields[field.name] = {'label': None}
+                    if field.fields:
+                        recurse_fields(field['fields'], lex_fields)
+
         for m in self.schemas:
             schema = m.get("schema")
             for field in schema.fields:
-                if field.name in lex_fields.keys():
-                    continue
-                else:
-                    lex_fields[field.name] = {'label': None}
+                if field.name not in lex_fields:
+                    lex_fields[field.name] = {'label': None}  # Or extract label if needed
+
+                # Recurse if the field has nested fields
+                if hasattr(field, 'fields') and field.fields:
+                    recurse_fields(field.fields, lex_fields)
 
         logging.debug("Lexical fields collected from mixtures, writing to lexicanum.yml")
         # Write to a YAML file

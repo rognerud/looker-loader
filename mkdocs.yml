@@ -1,0 +1,80 @@
+site_name: Looker Loader Documentation
+site_description: Automatically refresh table views and create rules for loading data into Looker
+site_author: Looker Loader Team
+site_url: https://rognerud.github.io/looker-loader/
+
+repo_name: looker-loader
+repo_url: https://github.com/rognerud/looker-loader
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.smartsymbols
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+  - Configuration:
+    - Loader Config: configuration/loader-config.md
+    - Loader Recipe: configuration/loader-recipe.md
+  - CLI Reference:
+    - Command Line Interface: cli/cli-reference.md
+    - Examples: cli/examples.md
+  - Advanced:
+    - Recipes: advanced/recipes.md
+    - Custom Dimensions: advanced/custom-dimensions.md
+    - Lexicanum: advanced/lexicanum.md
+  - API Reference:
+    - Models: api/models.md
+    - Tools: api/tools.md 
