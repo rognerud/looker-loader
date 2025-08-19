@@ -79,6 +79,7 @@ class LookmlGenerator:
             explore = {
                 "name": model.name,
                 "joins": joins,
+                "hidden": "yes"
             }
             return explore
 
