@@ -184,6 +184,8 @@ class RecipeFilter(BaseModel):
     fields_include: Optional[List[str]] = None
     fields_exclude: Optional[List[str]] = None
     field_order: Optional[List[int]] = None
+    is_nested: Optional[bool] = False
+    depth: Optional[List[int]] = None
 
     @model_validator(mode="before")
     def check_at_least_one_field(cls, values):

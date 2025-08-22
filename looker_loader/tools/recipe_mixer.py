@@ -1,5 +1,5 @@
 from looker_loader.models.database import DatabaseField, DatabaseTable
-from looker_loader.models.recipe import LookerMixture, Recipe, CookBook, RecipeFilter, LookerRecipeDimension, LookerRecipeDerivedDimension, LookerMixtureDimension
+from looker_loader.models.recipe import LookerMixture, Recipe, CookBook, RecipeFilter, LookerMixtureDimension
 
 from typing import List, Optional, Union
 import re
@@ -35,7 +35,6 @@ class RecipeMixer:
         """
         Check if a filter is relevant for the given field_name, type, and tags.
         """
-
         return all([
             not filter.types or field.type in filter.types,
             not filter.db_types or field.db_type in filter.db_types,
@@ -45,6 +44,8 @@ class RecipeMixer:
             not filter.fields_include or field.name in filter.fields_include,
             not filter.fields_exclude or field.name not in filter.fields_exclude,
             not filter.field_order or field.order in filter.field_order,
+            not filter.is_nested or field.is_nested == filter.is_nested,
+            not filter.depth or field.depth in filter.depth,
         ])
 
     def create_mixture(

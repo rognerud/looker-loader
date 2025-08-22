@@ -17,6 +17,8 @@ class DatabaseField(BaseModel):
     parent_mode: Optional[str] = None
     parent_type: Optional[str] = None
     parent_db_type: Optional[str] = None
+    is_nested: Optional[bool] = False
+    depth: Optional[int] = 0
     sql: Optional[str] = None
     fields: Optional[List["DatabaseField"]] = None
 
@@ -52,6 +54,7 @@ class DatabaseField(BaseModel):
                 child["parent_mode"] = values.get("mode")
                 child["parent_type"] = values.get("type")
                 child["parent_db_type"] = values.get("db_type")
+                child["depth"] = values.get("depth", 0) + 1
                 if hasattr(values, "parent_name"):
                     child["parent_name"] = f"{values.get('parent_name')}.{values.get('name')}"
                 else:
@@ -70,6 +73,7 @@ class DatabaseField(BaseModel):
             fields = []
             for i, field in enumerate(values.get("fields")):
                 field["order"] = i
+                field["is_nested"] = True
                 fields.append(field)
             values["fields"] = fields
         return values
