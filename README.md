@@ -121,12 +121,11 @@ views/
 
 **Authentication errors**
 - Ensure your Google Cloud credentials are properly set up
-- Check the [Installation Guide](installation.md) for authentication options
 
 ## Next Steps
 
 Now that you have the basics working:
 
-- **[Explore Configuration Options](../docs/loader-config.md)** - Learn about all available configuration settings
-- **[Create Custom Recipes](../docs/loader-recipe.md)** - Build specialized field transformation rules
-- **[Use Lexicanum](../docs/lexicanum.md)** - Enhance field definitions by using a common source of truth
+- **[Explore Configuration Options](https://github.com/rognerud/looker-loader/tree/main/docs/loader-config.md)** - Learn about all available configuration settings
+- **[Create Custom Recipes](https://github.com/rognerud/looker-loader/tree/main/docs/loader-recipe.md)** - Build specialized field transformation rules
+- **[Use Lexicanum](https://github.com/rognerud/looker-loader/tree/main/docs/lexicanum.md)** - Enhance field definitions by using a common source of truth
