@@ -191,7 +191,7 @@ class Cli:
                     if field.name not in lex_fields:
                         lex_fields[field.name] = {'label': None}
                     if field.fields:
-                        recurse_fields(field['fields'], lex_fields)
+                        recurse_fields(field.fields, lex_fields)
 
         for m in self.schemas:
             schema = m.get("schema")
