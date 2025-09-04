@@ -65,7 +65,7 @@ class LookmlGenerator:
                 "sql": f"LEFT JOIN UNNEST(${{{parent}.{model.name}}}) AS {parent_name}",
                 "type": "left_outer",
                 "relationship": "one_to_many",
-                "required_joins": parent if depth > 1 else None,
+                "required_joins": [parent] if depth > 1 else None,
             }
             joins.append(join)
 
