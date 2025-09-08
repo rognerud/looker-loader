@@ -35,9 +35,13 @@ class DatasetConfig(BaseModel):
         default=False,
         description="Whether to create unstyled views for the dataset"
     )
-    only_apply_recipe: Optional[List[str]] = Field(
+    apply_recipe: Optional[List[str]] = Field(
         default=None,
         description="List of recipe names to apply to the dataset"
+    )
+    exclude_recipe: Optional[List[str]] = Field(
+        default=None,
+        description="List of recipe names to exclude from the dataset"
     )
 
 class LoaderConfig(BaseModel):

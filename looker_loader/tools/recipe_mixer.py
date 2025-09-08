@@ -51,7 +51,7 @@ class RecipeMixer:
         ])
 
     def create_mixture(
-        self, field: DatabaseField, recipe_list: Optional[List[str]] = None
+        self, field: DatabaseField, recipe_list: Optional[List[str]] = None, exclude_recipe: Optional[List[str]] = None
     ) -> Optional[Recipe]:
         """
         Combine relevant recipes from cookbook based on field_name, type, and tags.
@@ -64,6 +64,7 @@ class RecipeMixer:
             for recipe in self.cookbook.recipes
             if self.is_filter_relevant(recipe.filters, field)
             and (not recipe_list or recipe.name in recipe_list)
+            and (not exclude_recipe or recipe.name not in exclude_recipe)
         ]
 
         if self.lexicanum:
@@ -174,7 +175,7 @@ class RecipeMixer:
         """Create and apply a mixture to a column, returning the applied mixture and its variants."""
         
         if not config.unstyled:
-                mixture = self.create_mixture(column, config.only_apply_recipe)
+            mixture = self.create_mixture(column, config.apply_recipe, config.exclude_recipe)
         else:
             mixture = None
 

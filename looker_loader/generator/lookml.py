@@ -77,7 +77,7 @@ class LookmlGenerator:
 
         if joins:
             explore = {
-                "name": model.name,
+                "name": f"{config.prefix_views}{model.name}",
                 "joins": joins,
                 "hidden": "yes"
             }
