@@ -156,6 +156,9 @@ class LookerDimension(LookerViewElement):
     html: Optional[str] = Field(default=None)
     sql: Optional[str] = None
     alias: Optional[List[str]] = None
+    suggest_explore: Optional[str] = None
+    suggest_dimension: Optional[str] = None
+    synonyms: Optional[List[str]] = None
     # fields: Optional[List['LookerDimension']] = None
 
 

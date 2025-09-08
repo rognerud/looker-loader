@@ -35,6 +35,10 @@ class DatasetConfig(BaseModel):
         default=False,
         description="Whether to create unstyled views for the dataset"
     )
+    only_apply_recipe: Optional[List[str]] = Field(
+        default=None,
+        description="List of recipe names to apply to the dataset"
+    )
 
 class LoaderConfig(BaseModel):
     """Loader configuration model for Looker Loader"""

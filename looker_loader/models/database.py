@@ -21,6 +21,7 @@ class DatabaseField(BaseModel):
     depth: Optional[int] = 0
     sql: Optional[str] = None
     fields: Optional[List["DatabaseField"]] = None
+    table_name: Optional[str] = None
 
     @model_validator(mode="before")
     def adjust_type(cls, values):
@@ -132,6 +133,7 @@ class DatabaseTable(BaseModel):
             ordered_fields = []
             for i, field in enumerate(values.get("fields")):
                 field["order"] = i
+                field["table_name"] = values.get("name")
                 ordered_fields.append(field)
             values["fields"] = ordered_fields
 

@@ -136,6 +136,10 @@ class LookerMixtureDimension(LookerRecipeDimension):
             values["alias"] = [ji2("alias", values, value=v) for v in values.get("alias")]
         if values.get("sql") is not None:
             values["sql"] = ji2("sql", values)
+        if values.get("suggest_dimension") is not None:
+            values["suggest_dimension"] = ji2("suggest_dimension", values)
+        if values.get("suggest_explore") is not None:
+            values["suggest_explore"] = ji2("suggest_explore", values)
         # if values.get("html") is not None:
             # values["html"] = ji2("html", values)
         if values.get("label") is not None:
@@ -186,6 +190,8 @@ class RecipeFilter(BaseModel):
     field_order: Optional[List[int]] = None
     is_nested: Optional[bool] = False
     depth: Optional[List[int]] = None
+    table_regex_include: Optional[str] = None
+    table_regex_exclude: Optional[str] = None
 
     @model_validator(mode="before")
     def check_at_least_one_field(cls, values):
