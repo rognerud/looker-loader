@@ -43,6 +43,10 @@ class DatasetConfig(BaseModel):
         default=None,
         description="List of recipe names to exclude from the dataset"
     )
+    explores_as_extensions: Optional[bool] = Field(
+        default=False,
+        description="Whether to create explores as extensions"
+    )
 
 class LoaderConfig(BaseModel):
     """Loader configuration model for Looker Loader"""

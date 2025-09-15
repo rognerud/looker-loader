@@ -81,6 +81,10 @@ class LookmlGenerator:
                 "joins": joins,
                 "hidden": "yes"
             }
+
+            if config.explores_as_extensions:
+                explore["extension"] = "required"
+
             return explore
 
     def generate(self, model, config) -> Dict:

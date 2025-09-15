@@ -80,6 +80,8 @@ class LookerMixtureMeasure(LookerMeasure):
             values["description"] = ji2("description", values)
         if values.get("group_item_label") is None:
             values["group_item_label"] = ji2("group_item_label", values)
+        if values.get("order_by_field") is not None:
+            values["order_by_field"] = ji2("order_by_field", values)
 
         if values.get("sql") is None:
             values["sql"] = f"${{{values.get("parent_name")}}}"
@@ -150,6 +152,8 @@ class LookerMixtureDimension(LookerRecipeDimension):
             values["description"] = ji2("description", values)
         if values.get("group_item_label") is None:
             values["group_item_label"] = ji2("group_item_label", values)
+        if values.get("order_by_field") is not None:
+            values["order_by_field"] = ji2("order_by_field", values)
 
         if values.get("suffix") is not None:
             values["name"] = f"d_{values.get('parent_name')}_{values.get('suffix')}"
