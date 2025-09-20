@@ -14,6 +14,14 @@ import logging
 def ji2(search, values, value=None):
     """Jinja2 render function"""
     jinja_env = Environment()
+
+    # Define your custom filter
+    def regex_replace(s, pattern, repl=''):
+        return re.sub(pattern, repl, s)
+
+    # Register it
+    jinja_env.filters['regex_replace'] = regex_replace
+
     if value is not None:
         target = value
     else:

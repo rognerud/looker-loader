@@ -12,7 +12,13 @@ class LookmlGenerator:
     """
     def __init__(self, cli_args):
         self._cli_args = cli_args
-    
+
+    def _dump_model(self, object, config):
+        """ Handle dumping, with configurable options """
+        if not config.include_descriptions:
+            return object.model_dump(exclude={'description'})
+        return object.model_dump()
+
     def _generate_views(self, model, config, views = None, parent = None):
         """Split up the model into views"""
 
@@ -28,13 +34,13 @@ class LookmlGenerator:
             view_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
 
         for field in model.fields:
-            view_dimensions.append(field.model_dump())
+            view_dimensions.append(self._dump_model(field, config))
 
             if field.fields is not None:
                 self._generate_views(field, config, views, parent=view_name)
             if field.measures is not None:
                 for measure in field.measures:
-                    view_measures.append(measure.model_dump())
+                    view_measures.append(self._dump_model(measure, config))
         view = LookerView(**{
             "name": view_name,
             "sql_table_name": model.sql_table_name,

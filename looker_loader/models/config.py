@@ -47,6 +47,10 @@ class DatasetConfig(BaseModel):
         default=False,
         description="Whether to create explores as extensions"
     )
+    include_descriptions: Optional[bool] = Field(
+        default=True,
+        description="Whether to create descriptions for views and fields"
+    )
 
 class LoaderConfig(BaseModel):
     """Loader configuration model for Looker Loader"""
