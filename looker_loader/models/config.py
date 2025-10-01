@@ -36,11 +36,11 @@ class DatasetConfig(BaseModel):
         description="Whether to create unstyled views for the dataset"
     )
     apply_recipe: Optional[List[str]] = Field(
-        default=None,
+        default=[],
         description="List of recipe names to apply to the dataset"
     )
     exclude_recipe: Optional[List[str]] = Field(
-        default=None,
+        default=[],
         description="List of recipe names to exclude from the dataset"
     )
     explores_as_extensions: Optional[bool] = Field(

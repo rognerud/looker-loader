@@ -1,6 +1,6 @@
 from looker_loader.models.database import DatabaseField, DatabaseTable
 from looker_loader.models.recipe import LookerMixture, Recipe, CookBook, RecipeFilter, LookerMixtureDimension
-
+from looker_loader.models.config import DatasetConfig
 from typing import List, Optional, Union
 import re
 import logging
@@ -51,23 +51,25 @@ class RecipeMixer:
         ])
 
     def create_mixture(
-        self, field: DatabaseField, recipe_list: Optional[List[str]] = None, exclude_recipe: Optional[List[str]] = None
+        self, field: DatabaseField, config: DatasetConfig
     ) -> Optional[Recipe]:
         """
         Combine relevant recipes from cookbook based on field_name, type, and tags.
         """
         if not self.cookbook.recipes:
             raise Exception("No recipes found in cookbook")
-        
+        if not config:
+            raise Exception("No config found")
+
         relevant_recipes = [
             recipe.dimension.model_dump()
             for recipe in self.cookbook.recipes
             if self.is_filter_relevant(recipe.filters, field)
-            and (not recipe_list or recipe.name in recipe_list)
-            and (not exclude_recipe or recipe.name not in exclude_recipe)
+            and (not config.apply_recipe or recipe.name in config.apply_recipe)
+            and (not config.exclude_recipe or recipe.name not in config.exclude_recipe)
         ]
 
-        if self.lexicanum:
+        if self.lexicanum and not config.apply_recipe:
             if field.name in self.lexicanum.root:
                 relevant_lexical_entry = self.lexicanum.root[field.name].model_dump()
                 if relevant_lexical_entry:
@@ -171,11 +173,11 @@ class RecipeMixer:
 
         return mixture
 
-    def apply_mixture(self, column: DatabaseField, config) -> tuple[LookerMixtureDimension, Optional[List[LookerMixtureDimension]]]:
+    def apply_mixture(self, column: DatabaseField, config: DatasetConfig) -> tuple[LookerMixtureDimension, Optional[List[LookerMixtureDimension]]]:
         """Create and apply a mixture to a column, returning the applied mixture and its variants."""
         
         if not config.unstyled:
-            mixture = self.create_mixture(column, config.apply_recipe, config.exclude_recipe)
+            mixture = self.create_mixture(column, config)
         else:
             mixture = None
 
@@ -192,7 +194,7 @@ class RecipeMixer:
         return applied_mixture, variants
 
     def _recursively_apply_mixture(
-        self, field: DatabaseField, config
+        self, field: DatabaseField, config: DatasetConfig
     ) -> list[LookerMixtureDimension]:
         """
         Recursively apply the mixture to the column and its subfields.
@@ -212,7 +214,7 @@ class RecipeMixer:
             result.append(v)
         return result
 
-    def mixturize(self, table: DatabaseTable, config) -> LookerMixture:
+    def mixturize(self, table: DatabaseTable, config: DatasetConfig) -> LookerMixture:
         """
         Search for and apply recipes to the table.
         """

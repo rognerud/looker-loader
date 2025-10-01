@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 from typing import List, Optional, Dict
 from looker_loader.enums import (
     LookerType,
@@ -7,21 +7,23 @@ from looker_loader.enums import (
 # Models for database information loading
 
 class DatabaseField(BaseModel):
-    name: str
-    type: LookerType
-    db_type: str
-    order: int
-    mode: Optional[str] = None
-    description: Optional[str] = None
-    parent_name: Optional[str] = None
-    parent_mode: Optional[str] = None
-    parent_type: Optional[str] = None
-    parent_db_type: Optional[str] = None
-    is_nested: Optional[bool] = False
-    depth: Optional[int] = 0
-    sql: Optional[str] = None
-    fields: Optional[List["DatabaseField"]] = None
-    table_name: Optional[str] = None
+    name: str = Field(..., description="The name of the database field (e.g., 'user_id').")
+    type: LookerType = Field(..., description="The Looker data type of the field (e.g., 'string', 'number', 'date').")
+    db_type: str = Field(..., description="The underlying database data type (e.g., 'VARCHAR', 'INT', 'DATE').")
+    order: int = Field(..., description="The ordinal position of the field within its parent structure.")
+    mode: Optional[str] = Field(None, description="The nullable mode of the field (e.g., 'NULLABLE', 'REQUIRED').")
+    description: Optional[str] = Field(None, description="A detailed textual description of the field's purpose or content.")
+    parent_name: Optional[str] = Field(None, description="The name of the parent field if this is a nested field.")
+    parent_mode: Optional[str] = Field(None, description="The mode of the parent field.")
+    parent_type: Optional[str] = Field(None, description="The type of the parent field.")
+    parent_db_type: Optional[str] = Field(None, description="The database type of the parent field.")
+    is_nested: Optional[bool] = Field(False, description="True if this field is part of a nested structure.")
+    depth: Optional[int] = Field(0, description="The nesting level of the field, starting from 0 for top-level.")
+    sql: Optional[str] = Field(None, description="The SQL expression used to define this field, if applicable.")
+    fields: Optional[List["DatabaseField"]] = Field(None, description="A list of child fields if this field is a record/struct type.")
+    table_name: Optional[str] = Field(None, description="The name of the table this field belongs to.")
+    sub_table_name: Optional[str] = Field(None, description="The name of the sub-table if this field is from a sub-table, else the table name.")
+
 
     @model_validator(mode="before")
     def adjust_type(cls, values):
@@ -43,6 +45,8 @@ class DatabaseField(BaseModel):
             copy["parent_db_type"] = "ARRAY"
             copy["parent_mode"] = "REPEATED"
             copy["description"] = f"A single value from {values.get("description", "")}"
+            copy["depth"] = values.get("depth", 0) + 1
+            copy["sub_table_name"] = f"{values.get('table_name')}__{values.get('name')}"
             values["fields"] = [copy]
         return values
 
@@ -56,10 +60,15 @@ class DatabaseField(BaseModel):
                 child["parent_type"] = values.get("type")
                 child["parent_db_type"] = values.get("db_type")
                 child["depth"] = values.get("depth", 0) + 1
+                child["table_name"] = values.get("table_name")
+
                 if hasattr(values, "parent_name"):
                     child["parent_name"] = f"{values.get('parent_name')}.{values.get('name')}"
                 else:
                     child["parent_name"] = values.get("name")
+
+                child["sub_table_name"] = f"{values.get('sub_table_name')}__{values.get("name")}"
+
                 inherited_children.append(DatabaseField(**child))
             values["fields"] = inherited_children
         return values
@@ -134,6 +143,7 @@ class DatabaseTable(BaseModel):
             for i, field in enumerate(values.get("fields")):
                 field["order"] = i
                 field["table_name"] = values.get("name")
+                field["sub_table_name"] = values.get("name")
                 ordered_fields.append(field)
             values["fields"] = ordered_fields
 
