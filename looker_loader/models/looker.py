@@ -259,17 +259,22 @@ class LookerView(BaseModel):
         if values.get("dimensions"):
             dimensions = []
             dimensions_groups = []
+            if hasattr(values["config"], "field_types"):
+                field_types = values["config"].field_types
+            else:
+                field_types = None
 
             for dimension in values["dimensions"]:
-                if dimension.get("type") in (
-                    "date",
-                    "datetime",
-                    "timestamp",
-                    "time",
-                ):
-                    dimensions_groups.append(dimension)
-                else:
-                    dimensions.append(dimension)
+                if not field_types or dimension.get("type") in field_types:
+                    if dimension.get("type") in (
+                        "date",
+                        "datetime",
+                        "timestamp",
+                        "time",
+                    ):
+                        dimensions_groups.append(dimension)
+                    else:
+                        dimensions.append(dimension)
             values["dimensions"] = dimensions
             values["dimension_groups"] = dimensions_groups
         return values

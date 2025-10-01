@@ -9,7 +9,6 @@ def fix_multiline_indentation(text, indent_size=2):
 
     inside_quoted_multiline = False
     inside_unquoted_multiline = False
-    multiline_key = None
     current_indent = ''
 
     for line in lines:

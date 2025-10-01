@@ -51,6 +51,10 @@ class DatasetConfig(BaseModel):
         default=True,
         description="Whether to create descriptions for views and fields"
     )
+    field_types: Optional[List[str]] = Field(
+        default=None,
+        description="List of field types to include"
+    )
 
 class LoaderConfig(BaseModel):
     """Loader configuration model for Looker Loader"""

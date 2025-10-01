@@ -46,6 +46,7 @@ class LookmlGenerator:
             "sql_table_name": model.sql_table_name,
             "dimensions": view_dimensions,
             "measures": view_measures,
+            "config": config
         })
         views.append(view)
 
