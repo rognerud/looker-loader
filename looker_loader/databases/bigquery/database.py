@@ -32,19 +32,26 @@ class BigQueryDatabase:
         )
         async with httpx.AsyncClient() as client:
             data = await client.get(url, headers=self.headers, timeout=10)  # Await the response and get the content
-
+        import rich
         return data.json(), config # Return the JSON content
 
     def _parse_schema(self, json) -> DatabaseTable:
         """Parse the schema of a BigQuery table into a Pydantic model."""
         table_ref = json.get("tableReference")
         fields = json.get("schema").get("fields")
+        clustering_fields = json.get("clustering", {}).get("fields", [])
+
+        add_clustering_to_fields = []
+        for field in fields:
+            if field.get("name") in clustering_fields:
+                field["is_clustered"] = True
+            add_clustering_to_fields.append(field)
 
         return DatabaseTable(
             name=table_ref.get("tableId"),
             table_group=table_ref.get("datasetId"),
             table_project=table_ref.get("projectId"),
-            fields=fields,
+            fields=add_clustering_to_fields,
             sql_table_name=f'{table_ref.get("projectId")}.{table_ref.get("datasetId")}.{table_ref.get("tableId")}',
         )
 

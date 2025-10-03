@@ -204,6 +204,7 @@ class RecipeFilter(BaseModel):
     depth: Optional[List[int]] = None
     table_regex_include: Optional[str] = None
     table_regex_exclude: Optional[str] = None
+    is_clustered: Optional[bool] = None
 
     @model_validator(mode="before")
     def check_at_least_one_field(cls, values):

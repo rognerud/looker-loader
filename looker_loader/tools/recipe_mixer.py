@@ -48,6 +48,7 @@ class RecipeMixer:
             not filter.depth or field.depth in filter.depth,
             not filter.table_regex_include or (field.table_name and re.search(filter.table_regex_include, field.table_name)),
             not filter.table_regex_exclude or (field.table_name and not re.search(filter.table_regex_exclude, field.table_name)),
+            not filter.is_clustered or (field.is_clustered and filter.is_clustered) 
         ])
 
     def create_mixture(

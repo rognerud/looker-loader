@@ -12,6 +12,7 @@ class DatabaseField(BaseModel):
     db_type: str = Field(..., description="The underlying database data type (e.g., 'VARCHAR', 'INT', 'DATE').")
     order: int = Field(..., description="The ordinal position of the field within its parent structure.")
     mode: Optional[str] = Field(None, description="The nullable mode of the field (e.g., 'NULLABLE', 'REQUIRED').")
+    is_clustered: Optional[bool] = Field(False, description="True if this field is used for clustering in the database.")
     description: Optional[str] = Field(None, description="A detailed textual description of the field's purpose or content.")
     parent_name: Optional[str] = Field(None, description="The name of the parent field if this is a nested field.")
     parent_mode: Optional[str] = Field(None, description="The mode of the parent field.")
