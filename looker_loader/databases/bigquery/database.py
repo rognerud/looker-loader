@@ -32,7 +32,9 @@ class BigQueryDatabase:
         )
         async with httpx.AsyncClient() as client:
             data = await client.get(url, headers=self.headers, timeout=10)  # Await the response and get the content
-        import rich
+        if data.status_code != 200:
+            logging.error(f"Error fetching table schema: {project_id}.{dataset_id}.{table_id} - {data.text}")
+            return {}, config
         return data.json(), config # Return the JSON content
 
     def _parse_schema(self, json) -> DatabaseTable:
@@ -46,6 +48,10 @@ class BigQueryDatabase:
             if field.get("name") in clustering_fields:
                 field["is_clustered"] = True
             add_clustering_to_fields.append(field)
+
+        if add_clustering_to_fields == []:
+            print("No fields found in table schema.")
+            add_clustering_to_fields = None
 
         return DatabaseTable(
             name=table_ref.get("tableId"),

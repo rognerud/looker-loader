@@ -621,7 +621,7 @@ wheels = [
 
 [[package]]
 name = "looker-loader"
-version = "0.1.40"
+version = "0.1.41"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
