@@ -46,12 +46,9 @@ class BigQueryDatabase:
         add_clustering_to_fields = []
         for field in fields:
             if field.get("name") in clustering_fields:
+                logging.debug(f"Field {field.get('name')} is clustered.")
                 field["is_clustered"] = True
             add_clustering_to_fields.append(field)
-
-        if add_clustering_to_fields == []:
-            print("No fields found in table schema.")
-            add_clustering_to_fields = None
 
         return DatabaseTable(
             name=table_ref.get("tableId"),
