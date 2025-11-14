@@ -1,3 +1,4 @@
+from typing import Union
 import google.auth
 from google.auth.transport.requests import Request
 import requests
@@ -8,15 +9,40 @@ from looker_loader.models.database import DatabaseTable
 from looker_loader.databases.bigquery.enums import BigqueryMode, BigqueryType, BigqueryUrl
 import httpx
 import logging
+from google.auth.impersonated_credentials import Credentials as ImpersonatedCredentials
+from google.auth.transport.requests import Request
+from google.auth import default
 
 class BigQueryDatabase:
     def __init__(self):
         """Initialize the BigQueryDatabase class."""
         self.database_type = "bigquery"
 
-    def init(self):
+    def init(self, impersonate_service_account: str = None):
         """Authenticate the user with Google Cloud using default credentials."""
-        credentials, _ = google.auth.default()
+        if impersonate_service_account:
+            logging.debug(f"Impersonating service account: {impersonate_service_account}")
+
+            # 1. Get the "source" credentials (the identity performing the impersonation).
+            # These can be your user credentials, another service account, etc.
+            # The source credentials must have the 'Service Account Token Creator' role
+            # on the target_principal service account.
+            source_credentials, _ = default(
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+
+            # 2. Create ImpersonatedCredentials.
+            # target_scopes should specify the permissions the impersonated service account needs.
+            credentials = ImpersonatedCredentials(
+                source_credentials=source_credentials,
+                target_principal=impersonate_service_account,
+                target_scopes=["https://www.googleapis.com/auth/cloud-platform"], # Or more specific scopes
+                lifetime=3600  # Optional: token lifetime in seconds (default is 3600, max is 43200)
+            )
+        else:
+            logging.debug("Using default credentials without impersonation.")
+            credentials, _ = default()
+
         credentials.refresh(Request())
         self.headers = {
             "Authorization": f"Bearer {credentials.token}",

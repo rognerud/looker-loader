@@ -66,6 +66,10 @@ class LoaderConfig(BaseModel):
         default="./output",
         description="Path where the Looker data will be output"
     )
+    impersonate_service_account: Optional[Union[str, bool]] = Field(
+        default=None,
+        description="Service account to impersonate for BigQuery operations"
+    )
 
 class BigQuery(BaseModel):
     """BigQuery model for Looker Loader"""

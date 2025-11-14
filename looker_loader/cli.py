@@ -245,12 +245,14 @@ class Cli:
     def run(self):
         """Run the CLI"""
         self.database = BigQueryDatabase()
-        self.database.init()
+        self._load_config()
+        logging.info("Initializing database connection...")
+        logging.info(f"Impersonate Service Account: {self.config.loader.impersonate_service_account}")
+        self.database.init(self.config.loader.impersonate_service_account)
 
         self.lookml = LookmlGenerator(cli_args=self.args)
 
         self._load_recipe()
-        self._load_config()
         self._load_tables()
 
         # retrieve the schemas of the tables
