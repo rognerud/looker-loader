@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator, Field
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from looker_loader.enums import (
     LookerType,
     LookerBigQueryDataType
@@ -25,7 +25,6 @@ class DatabaseField(BaseModel):
     table_name: Optional[str] = Field(None, description="The name of the table this field belongs to.")
     sub_table_name: Optional[str] = Field(None, description="The name of the sub-table if this field is from a sub-table, else the table name.")
 
-
     @model_validator(mode="before")
     def adjust_type(cls, values):
         """Adjust the type of the field based on the db_type."""
@@ -39,7 +38,9 @@ class DatabaseField(BaseModel):
 
     @model_validator(mode="before")
     def push_down_copy_for_repeated(cls, values):
-        """ push down copy for repeated fields that are arrays """
+        """ push down copy for repeated fields that are arrays.
+            This is to make arrays and repeatead structs be handled the same way.
+        """
         if values.get("mode") == "REPEATED" and values.get("fields") is None:
             copy = values.copy()
             copy["mode"] = "NULLABLE"
@@ -117,35 +118,55 @@ class DatabaseTable(BaseModel):
         from_attributes = True
 
     @model_validator(mode="before")
-    def flatten_non_repeated_structs(cls, values):
-        """ flatten non-repeated structs that are not arrays """
+    def flatten_non_repeated_structs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively flatten non-repeated structs that are not arrays."""
         
-        if values.get("fields") is not None:
-            flattened_fields = []
-            pop_fields = []
+        raw_fields = values.get("fields")
 
-            for i, field in enumerate(values.get("fields")):
-                struct_fields = []
-                if field.get("mode") != "REPEATED" and field.get("type") == "RECORD" and field.get("fields") is not None:
-                    # Flatten the struct
-                    for subfield in field.get("fields"):
-                        subfield["name"] = f"{field.get('name')}.{subfield.get('name')}"
-                        struct_fields.append(subfield)
+        if raw_fields:
+            
+            def flatten_list(fields: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                flattened = []
+                for field in fields:
+                    # Check if it's a flatten-able struct (RECORD + Not REPEATED + has fields)
+                    if (field.get("mode") != "REPEATED" and 
+                        field.get("type") == "RECORD" and 
+                        field.get("fields") is not None):
+                        
+                        # Get children
+                        children = field.get("fields")
+                        
+                        # Rename children to include the current parent's name
+                        # This passes the dot notation down the chain
+                        for child in children:
+                            child["name"] = f"{field.get('name')}.{child.get('name')}"
+                        
+                        # RECURSION: Call the function on the children
+                        # This ensures we go deeper if the child is also a struct
+                        flattened.extend(flatten_list(children))
+                    else:
+                        # Base case: It's a primitive or a Repeated field, keep it.
+                        flattened.append(field)
+                return flattened
 
-                    pop_fields.append(i)
-                    flattened_fields.extend(struct_fields)
+            # 1. Execute the recursive flattening
+            new_fields = flatten_list(raw_fields)
 
-            if flattened_fields:
-                for i in sorted(pop_fields, reverse=True):
-                    values["fields"].pop(i)
-                values["fields"].extend(flattened_fields)
-
+            # 2. Post-processing (Ordering and metadata assignment)
+            # This logic remains outside the recursion to apply to the final flat list
             ordered_fields = []
-            for i, field in enumerate(values.get("fields")):
+            table_name = values.get("name")
+            
+            for i, field in enumerate(new_fields):
                 field["order"] = i
-                field["table_name"] = values.get("name")
-                field["sub_table_name"] = values.get("name")
+                field["table_name"] = table_name
+                field["sub_table_name"] = table_name
+                
+                # Cleanup: 
+                field.pop("fields", None) 
+                
                 ordered_fields.append(field)
+
             values["fields"] = ordered_fields
 
         return values

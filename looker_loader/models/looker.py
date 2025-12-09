@@ -278,3 +278,10 @@ class LookerView(BaseModel):
             values["dimensions"] = dimensions
             values["dimension_groups"] = dimensions_groups
         return values
+
+    @model_validator(mode="after")
+    def ensure_no_dots_in_names(cls, values):
+        """Ensure no dots in dimension and measure names."""
+        if values.name is not None:
+            values.name = values.name.replace(".", "__")
+        return values

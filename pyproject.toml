@@ -1,6 +1,6 @@
 [project]
 name = "looker_loader"
-version = "0.1.45"
+version = "0.1.46"
 description = "a tool for flexibly loading schemas from bigquery into looker"
 readme = "README.md"
 requires-python = ">=3.10"

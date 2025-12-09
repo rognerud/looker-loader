@@ -57,10 +57,12 @@ class LookmlGenerator:
         if joins is None:
             joins = []
 
+        model_name = model.name.replace(".", "__")
+
         if parent is not None:
-            parent_name = f"{parent}__{model.name}{config.suffix_views}"
+            parent_name = f"{parent}__{model_name}{config.suffix_views}"
         else:
-            parent_name = f"{config.prefix_views}{model.name}{config.suffix_views}"
+            parent_name = f"{config.prefix_views}{model_name}{config.suffix_views}"
 
         for field in model.fields:
             if field.fields is not None:
@@ -69,7 +71,7 @@ class LookmlGenerator:
         if parent is not None:
             join = {
                 "name": parent_name,
-                "sql": f"LEFT JOIN UNNEST(${{{parent}.{model.name}}}) AS {parent_name}",
+                "sql": f"LEFT JOIN UNNEST(${{{parent}.{model_name}}}) AS {parent_name}",
                 "type": "left_outer",
                 "relationship": "one_to_many",
                 "required_joins": [parent] if depth > 1 else None,
