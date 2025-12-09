@@ -233,7 +233,6 @@ class Cli:
         for r in results:
             try:
                 schemas.append({"schema":self.database._parse_schema(r[0]), "config": r[1]})
-                print(schemas[0]["schema"])
             except AttributeError as e:
                 logging.error(f"Error processing schema for table {r[0].get('table_id')}: {e}")
 

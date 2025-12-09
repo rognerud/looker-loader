@@ -39,14 +39,12 @@ def preprocess_jinja(input_str):
     """ if string contains {{{}}} convert it to { {{}} }"""
     if input_str is not None:
         input_str = input_str.replace("{{{", "{ {{").replace("}}}", "}} }")
-        # print(f"Preprocessed Jinja: {input_str}")
     return input_str
 
 def postprocess_jinja(input_str):
     """ if string contains ${ value } convert it to ${value} *any amount of whitespace allowed*"""
     if input_str is not None:
         input_str = re.sub(r'\$\s*\{\s*([^\}]+?)\s*\}', r'${\1}', input_str)
-        # print(f"Postprocessed Jinja: {input_str}")
     return input_str
 
 class LookerRecipeDerivedDimension(LookerDimension):
