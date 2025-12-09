@@ -22,15 +22,19 @@ class BigQueryDatabase:
         """Authenticate the user with Google Cloud using default credentials."""
         if impersonate_service_account:
             logging.debug(f"Impersonating service account: {impersonate_service_account}")
-            # 1. Get the "source" credentials (the identity performing the impersonation).
-            # These can be your user credentials, another service account, etc.
-            # The source credentials must have the 'Service Account Token Creator' role
-            # on the target_principal service account.
             source_credentials, _ = default(
                 scopes=["https://www.googleapis.com/auth/cloud-platform"]
             )
-            # 2. Create ImpersonatedCredentials.
-            # target_scopes should specify the permissions the impersonated service account needs.
+
+            try:
+                source_credentials.refresh(Request())
+            except TypeError:
+                logging.warning("Detected incompatible source credentials. Re-fetching defaults...")
+                source_credentials, _ = default(
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+                source_credentials.refresh(Request())
+
             self.credentials = ImpersonatedCredentials( # Store credentials in self.credentials
                 source_credentials=source_credentials,
                 target_principal=impersonate_service_account,
@@ -41,7 +45,10 @@ class BigQueryDatabase:
             logging.debug("Using default credentials without impersonation.")
             self.credentials, _ = default() # Store credentials in self.credentials
 
-        self.credentials.refresh(Request())
+        try:
+            self.credentials.refresh(Request())
+        except Exception as e:
+            logging.error(f"Error refreshing credentials: {e}")
         self.headers = {
             "Authorization": f"Bearer {self.credentials.token}",
             "Content-Type": "application/json",
