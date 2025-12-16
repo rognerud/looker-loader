@@ -119,54 +119,60 @@ class DatabaseTable(BaseModel):
 
     @model_validator(mode="before")
     def flatten_non_repeated_structs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Recursively flatten non-repeated structs that are not arrays."""
+        """
+        Recursively flattens non-repeated RECORD fields (structs) into dot-notation fields.
+        e.g., {parent: {child: val}} becomes {parent.child: val}.
+        """
+        fields = values.get("fields")
+        if not fields:
+            return values
+
+        def _recursive_flatten(current_fields: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            flattened_batch = []
+            
+            for field in current_fields:
+                # Condition: It is a RECORD (struct), NOT repeated (array), and has children
+                if (
+                    field.get("type") == "RECORD" 
+                    and field.get("mode") != "REPEATED" 
+                    and field.get("fields")
+                ):
+                    children = field.get("fields", [])
+                    parent_name = field.get("name")
+
+                    # Rename children to include parent prefix
+                    # This prepares them for the next recursive step
+                    for child in children:
+                        child["name"] = f"{parent_name}.{child.get('name')}"
+
+                    # RECURSION: Process the renamed children
+                    # This ensures deeply nested structs (parent.child.grandchild) are flattened
+                    flattened_batch.extend(_recursive_flatten(children))
+                else:
+                    # Base Case: Primitive type or Repeated Array (keep as is)
+                    flattened_batch.append(field)
+                    
+            return flattened_batch
+
+        # 1. Perform Recursive Flattening
+        # We pass a shallow copy of the list to ensure safety during iteration
+        flat_fields = _recursive_flatten(list(fields))
+
+        # 2. Post-Processing: Order and Metadata
+        # This logic applies to the final flat list, ensuring distinct order IDs
+        table_name = values.get("name")
         
-        raw_fields = values.get("fields")
-
-        if raw_fields:
+        for i, field in enumerate(flat_fields):
+            field["order"] = i
+            field["table_name"] = table_name
+            field["sub_table_name"] = table_name
             
-            def flatten_list(fields: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-                flattened = []
-                for field in fields:
-                    # Check if it's a flatten-able struct (RECORD + Not REPEATED + has fields)
-                    if (field.get("mode") != "REPEATED" and 
-                        field.get("type") == "RECORD" and 
-                        field.get("fields") is not None):
-                        
-                        # Get children
-                        children = field.get("fields")
-                        
-                        # Rename children to include the current parent's name
-                        # This passes the dot notation down the chain
-                        for child in children:
-                            child["name"] = f"{field.get('name')}.{child.get('name')}"
-                        
-                        # RECURSION: Call the function on the children
-                        # This ensures we go deeper if the child is also a struct
-                        flattened.extend(flatten_list(children))
-                    else:
-                        # Base case: It's a primitive or a Repeated field, keep it.
-                        flattened.append(field)
-                return flattened
+            # Cleanup: 'fields' key should not exist on flattened primitives
+            # (unless it's a REPEATED RECORD, in which case we might want to keep the inner schema)
+            if field.get("mode") != "REPEATED":
+                field.pop("fields", None)
 
-            # 1. Execute the recursive flattening
-            new_fields = flatten_list(raw_fields)
-
-            # 2. Post-processing (Ordering and metadata assignment)
-            # This logic remains outside the recursion to apply to the final flat list
-            ordered_fields = []
-            table_name = values.get("name")
-            
-            for i, field in enumerate(new_fields):
-                field["order"] = i
-                field["table_name"] = table_name
-                field["sub_table_name"] = table_name
-                
-                # Cleanup: 
-                field.pop("fields", None) 
-                
-                ordered_fields.append(field)
-
-            values["fields"] = ordered_fields
-
+        values["fields"] = flat_fields
         return values
+
+
